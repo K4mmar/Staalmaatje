@@ -1,0 +1,6 @@
+# Dit is een configuratiebestand voor Netlify
+
+[functions]
+  # We verhogen de standaard time-out voor alle serverless functies
+  # De standaard is 10 seconden, we maken er 25 van.
+  timeout = 25
