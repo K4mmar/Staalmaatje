@@ -169,60 +169,39 @@ document.addEventListener('DOMContentLoaded', () => {
 
         } catch (error) {
             console.error("Fout bij genereren van AI werkblad:", error);
-            showNotification('Oeps, er ging iets mis bij het maken van de woorden.', true);
+            showNotification(`Oeps, er ging iets mis: ${error.message}`, true);
         } finally {
             generateButton.disabled = false;
             generateButton.innerHTML = `<i class="fas fa-magic mr-2"></i> Maak Werkblad`;
         }
     }
 
-    async function callGeminiAPI(prompt, systemPrompt, retries = 3, delay = 1000) {
-        const apiKey = ""; // API key wordt door de omgeving afgehandeld
-        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
-
-        const payload = {
-            contents: [{ parts: [{ text: prompt }] }],
-            systemInstruction: {
-                parts: [{ text: systemPrompt }]
-            },
-            generationConfig: {
-                responseMimeType: "application/json",
-            }
-        };
+    async function callGeminiAPI(userPrompt, systemPrompt) {
+        // De URL van onze eigen veilige Netlify Function
+        const functionUrl = '/.netlify/functions/generate-words';
 
         try {
-            const response = await fetch(apiUrl, {
+            const response = await fetch(functionUrl, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ userPrompt, systemPrompt }),
             });
 
             if (!response.ok) {
-                if (response.status === 429 && retries > 0) {
-                    await new Promise(res => setTimeout(res, delay));
-                    return callGeminiAPI(prompt, systemPrompt, retries - 1, delay * 2);
-                }
-                const errorBody = await response.text();
-                throw new Error(`API request failed with status ${response.status}: ${errorBody}`);
+                const errorResult = await response.json();
+                throw new Error(errorResult.error || 'Er is een onbekende fout opgetreden bij de server.');
             }
 
-            const result = await response.json();
-            const candidate = result.candidates?.[0];
+            // De Netlify function geeft de JSON-string van Gemini direct door
+            const resultText = await response.text();
+            return resultText;
 
-            if (candidate && candidate.content?.parts?.[0]?.text) {
-                return candidate.content.parts[0].text;
-            } else {
-                console.error("Onverwachte API response:", JSON.stringify(result, null, 2));
-                throw new Error("Geen geldige content ontvangen van de API. Dit kan door veiligheidsinstellingen komen.");
-            }
         } catch (error) {
-            if (retries > 0) {
-                await new Promise(res => setTimeout(res, delay));
-                return callGeminiAPI(prompt, systemPrompt, retries - 1, delay * 2);
-            } else {
-                console.error("API call failed after multiple retries:", error);
-                throw error;
-            }
+            console.error("Fout bij het aanroepen van de Netlify Function:", error);
+            // We gooien de error verder zodat de generateWorksheetWithAI functie het kan opvangen
+            throw error;
         }
     }
 
@@ -304,10 +283,11 @@ document.addEventListener('DOMContentLoaded', () => {
             if (wordList.length === 0) throw new Error("Geen woorden om een verhaal te maken.");
             
             const groupDisplay = currentGroup === '7' ? '7 of 8' : currentGroup;
-            const prompt = `Schrijf een heel kort, grappig en eenvoudig verhaaltje in het Nederlands voor een kind in groep ${groupDisplay}. Het verhaal moet de volgende woorden bevatten: ${wordList.join(', ')}. Maak de woorden uit de lijst dikgedrukt in de tekst door ze te omringen met **. Zorg ervoor dat het verhaal logisch en makkelijk te lezen is.`;
+            const userPrompt = `Schrijf een heel kort, grappig en eenvoudig verhaaltje in het Nederlands voor een kind in groep ${groupDisplay}. Het verhaal moet de volgende woorden bevatten: ${wordList.join(', ')}. Maak de woorden uit de lijst dikgedrukt in de tekst door ze te omringen met **. Zorg ervoor dat het verhaal logisch en makkelijk te lezen is.`;
             const systemPrompt = `Je bent een creatieve kinderboekenschrijver. Schrijf een kort, positief en grappig verhaal.`;
             
-            const storyText = await callGeminiAPI(prompt, systemPrompt);
+            // Ook de verhaal-functie gebruikt nu de veilige aanroep
+            const storyText = await callGeminiAPI(userPrompt, systemPrompt);
             if (!storyText) throw new Error("Kon geen verhaal genereren.");
             
             const formattedStory = storyText.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>');
@@ -317,7 +297,7 @@ document.addEventListener('DOMContentLoaded', () => {
             console.error('Error generating story:', error);
             const storyOutput = document.getElementById('story-output');
             if (storyOutput) {
-                storyOutput.innerHTML = `<p class="text-red-600">Oeps, er ging iets mis bij het maken van het verhaal. Probeer het opnieuw!</p>`;
+                storyOutput.innerHTML = `<p class="text-red-600">Oeps, er ging iets mis bij het maken van het verhaal: ${error.message}</p>`;
             }
         } finally {
             storyBtn.disabled = false;
