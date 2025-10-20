@@ -156,10 +156,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const userPrompt = `Genereer 12 unieke woorden voor een kind in groep ${groupDisplay} op basis van de volgende spellingcategorieën: ${JSON.stringify(geselecteerdeRegels, null, 2)}.`;
             
-            const systemPrompt = `Je bent een behulpzame onderwijsassistent gespecialiseerd in de Nederlandse taal voor basisschoolkinderen. Je taak is het genereren van woorden voor een spellingwerkblad volgens de 'Staal' methode. Je krijgt een lijst met geselecteerde spellingcategorieën, inclusief hun naam en de specifieke regel. Genereer op basis van deze selectie 12 unieke Nederlandse woorden. Zorg ervoor dat de woorden passen bij de opgegeven categorie en regel. Voor elk woord, bedenk een korte, eenvoudige Nederlandse zin die geschikt is voor een kind. In de zin moet het woord voorkomen. Lever het resultaat alleen als een perfect gestructureerd JSON-object terug, in de vorm van een array. Gebruik het volgende formaat: \`[ { "woord": "voorbeeldwoord", "zin": "Dit is een zin met het [voorbeeldwoord].", "categorie": ID }, ... ]\`. Gebruik geen moeilijke of ongepaste woorden. De zinnen moeten natuurlijk en begrijpelijk zijn. Plaats het gegenereerde woord in de zin tussen vierkante haken [].`;
+            const systemPrompt = `Je bent een behulpzame onderwijsassistent gespecialiseerd in de Nederlandse taal voor basisschoolkinderen. Je taak is het genereren van woorden voor een spellingwerkblad volgens de 'Staal' methode. Je krijgt een lijst met geselecteerde spellingcategorieën, inclusief hun naam en de specifieke regel. Genereer op basis van deze selectie 12 unieke Nederlandse woorden. Zorg ervoor dat de woorden passen bij de opgegeven categorie en regel. Voor elk woord, bedenk een korte, eenvoudige Nederlandse zin die geschikt is voor een kind. In de zin moet het woord voorkomen. Lever het resultaat alleen als een perfect gestructureerd JSON-object terug. Gebruik het volgende formaat: \`{ "woordenlijst": [ { "woord": "voorbeeldwoord", "zin": "Dit is een zin met het [voorbeeldwoord].", "categorie": ID }, ... ] }\`. Gebruik geen moeilijke of ongepaste woorden. De zinnen moeten natuurlijk en begrijpelijk zijn. Plaats het gegenereerde woord in de zin tussen vierkante haken [].`;
 
             const jsonResponse = await callGeminiAPI(userPrompt, systemPrompt);
-            const worksheetWords = JSON.parse(jsonResponse);
+            const resultObject = JSON.parse(jsonResponse);
+            const worksheetWords = resultObject.woordenlijst;
 
             if (!worksheetWords || worksheetWords.length === 0) {
                 throw new Error("De AI kon geen woorden genereren.");
@@ -322,4 +323,5 @@ document.addEventListener('DOMContentLoaded', () => {
         window.print();
     }
 });
+
 
