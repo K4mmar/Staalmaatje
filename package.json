@@ -1,0 +1,8 @@
+{
+  "name": "staalmaatje-netlify-functie",
+  "version": "1.0.0",
+  "description": "Dependencies voor de Netlify serverless functie.",
+  "dependencies": {
+    "node-fetch": "^2.6.1"
+  }
+}
