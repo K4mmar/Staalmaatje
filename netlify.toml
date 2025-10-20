@@ -1,13 +1,17 @@
-# Dit is een configuratiebestand voor Netlify
+# Netlify configuratiebestand voor Staalmaatje
 
+# Basis bouwinstellingen
 [build]
   # Vertel Netlify dat er geen build-commando is voor de site.
-  # De dependencies in package.json worden nog steeds geïnstalleerd voor de functies.
+  # De dependencies in package.json worden wel geïnstalleerd voor de functies.
   command = ""
-  # De publiceerbare map is de hoofdmap van het project.
-  publish = "."
+  # De bestanden voor de website staan in de hoofdmap.
+  publish = "/"
 
+# Configuratie voor de Netlify Functions
 [functions]
-  # We verhogen de standaard time-out voor alle serverless functies.
+  # Specificeer expliciet waar de functies staan.
+  directory = "netlify/functions"
+  # Verhoog de standaard time-out voor de functies.
   timeout = 25
 
