@@ -1,6 +1,13 @@
 # Dit is een configuratiebestand voor Netlify
 
+[build]
+  # Vertel Netlify dat er geen build-commando is voor de site.
+  # De dependencies in package.json worden nog steeds geïnstalleerd voor de functies.
+  command = ""
+  # De publiceerbare map is de hoofdmap van het project.
+  publish = "."
+
 [functions]
-  # We verhogen de standaard time-out voor alle serverless functies
-  # De standaard is 10 seconden, we maken er 25 van.
+  # We verhogen de standaard time-out voor alle serverless functies.
   timeout = 25
+
