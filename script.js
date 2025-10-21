@@ -84,7 +84,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const generateBtnContainer = document.getElementById('generate-button-container');
     const generateBtn = document.getElementById('generate-btn');
     const worksheetOutput = document.getElementById('worksheet-output');
+    
+    // Verwijder de "Selecteer/Deselecteer alles" knop en functionaliteit
     const selectAllBtn = document.getElementById('select-all-btn');
+    if (selectAllBtn) {
+        selectAllBtn.parentElement.remove();
+    }
 
     function showNotification(message, isError = false) {
         const notification = document.createElement('div');
@@ -97,7 +102,7 @@ document.addEventListener('DOMContentLoaded', () => {
             setTimeout(() => {
                 notification.remove();
             }, 300);
-        }, 3000);
+        }, 3000); // Kortere duur voor deze melding
     }
 
     ['4', '5', '6', '7/8'].forEach(group => {
@@ -141,10 +146,15 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    selectAllBtn.addEventListener('click', () => {
-        const checkboxes = categoryList.querySelectorAll('input[type="checkbox"]');
-        const allSelected = Array.from(checkboxes).every(cb => cb.checked);
-        checkboxes.forEach(cb => cb.checked = !allSelected);
+    // Voeg een limiet toe aan het aantal selecteerbare categorieën
+    categoryList.addEventListener('change', (e) => {
+        if (e.target.type === 'checkbox') {
+            const checkedCheckboxes = categoryList.querySelectorAll('input[type="checkbox"]:checked');
+            if (checkedCheckboxes.length > 3) {
+                showNotification('Je kunt maximaal 3 categorieën selecteren.', true);
+                e.target.checked = false;
+            }
+        }
     });
     
     generateBtn.addEventListener('click', async () => {
@@ -165,10 +175,8 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const geselecteerdeRegels = spellingRegels.filter(regel => selectedCatIds.includes(regel.id));
             const groupDisplay = currentGroup === '7' ? '7 of 8' : currentGroup;
-
-            // --- AANPASSING: NIEUWE, SLIMMERE PROMPT ---
-            const userQuery = `Maak 12 spellingoefeningen voor groep ${groupDisplay} op basis van deze regels: ${JSON.stringify(geselecteerdeRegels, null, 2)}`;
             
+            const userQuery = `Maak 12 spellingoefeningen voor groep ${groupDisplay} op basis van deze regels: ${JSON.stringify(geselecteerdeRegels, null, 2)}`;
             const systemPrompt = `Je bent een ervaren en creatieve leerkracht voor het basisonderwijs in Nederland, expert in de 'Staal' spellingmethode. Je taak is het genereren van een gevarieerd en didactisch verantwoord spellingwerkblad.
             - Genereer een mix van de volgende 3 opdrachttypes: 'invulzin', 'husselwoord', en 'regelvraag'.
             - 'invulzin': Maak een zin en vervang het doelwoord door '...........'.
@@ -185,12 +193,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 throw new Error("De AI kon geen opdrachten genereren.");
             }
             
-            currentWorksheetWords = worksheetItems; // Sla de nieuwe opdrachten op
+            currentWorksheetWords = worksheetItems;
             renderWorksheet(worksheetItems, selectedCatIds);
 
         } catch (error) {
             console.error("Fout bij genereren van AI werkblad:", error);
-            showNotification(`Oeps, er ging iets mis: ${error.message}`, true);
+            let userMessage = `Oeps, er ging iets mis: ${error.message}`;
+            if (error.message.includes("503")) {
+                userMessage = "De AI-service is momenteel overbelast. Probeer het over een minuutje opnieuw.";
+            }
+            showNotification(userMessage, true);
         } finally {
             generateButton.disabled = false;
             generateButton.innerHTML = `<i class="fas fa-magic mr-2"></i> Maak Werkblad`;
@@ -210,6 +222,9 @@ document.addEventListener('DOMContentLoaded', () => {
             responseText = await response.text();
 
             if (!response.ok) {
+                if (response.status === 503) {
+                    throw new Error("503: Service Unavailable");
+                }
                 let errorMsg = `Serverfout (status ${response.status})`;
                 try {
                     const errorJson = JSON.parse(responseText);
@@ -228,7 +243,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // --- AANPASSING: DEZE FUNCTIE IS NU VEEL SLIMMER ---
     function renderWorksheet(items, selectedCatIds) {
         const groupDisplay = currentGroup === '7' ? '7/8' : currentGroup;
     
@@ -249,7 +263,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
         items.forEach((item, index) => {
             let opdrachtHTML = '';
-            // Genereer HTML op basis van het opdrachttype
             switch (item.type) {
                 case 'invulzin':
                     opdrachtHTML = `<p>${item.opdracht.replace('...........', '<span class="font-semibold text-gray-700">...........</span>')}</p>`;
@@ -273,7 +286,7 @@ document.addEventListener('DOMContentLoaded', () => {
             `;
         });
 
-        studentSheetHTML += `</div>`; // Sluit de space-y-5 div af
+        studentSheetHTML += `</div>`;
 
         const answerSheetHTML = `
             <h2 class="text-2xl font-bold mb-1">Antwoordenblad Groep ${groupDisplay}</h2>
@@ -316,11 +329,52 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     window.generateStory = async function() {
-        // ... (deze functie blijft hetzelfde)
+        const storyBtn = document.getElementById('generate-story-btn');
+        const storyContainer = document.getElementById('story-container');
+        if (!storyBtn || !storyContainer) return;
+
+        storyBtn.disabled = true;
+        storyBtn.innerHTML = `<i class="fas fa-spinner fa-spin mr-2"></i> Verhaal wordt gemaakt...`;
+        storyContainer.innerHTML = `<h3 class="text-2xl font-bold mb-4">✨ Jouw unieke verhaal!</h3><div id="story-output" class="p-4 bg-purple-50 rounded-lg border border-purple-200 min-h-[100px]"><p>Een momentje, de woorden-elfjes zijn druk aan het schrijven...</p></div>`;
+
+        try {
+            const wordList = currentWorksheetWords.map(item => item.woord);
+            if (wordList.length === 0) throw new Error("Geen woorden om een verhaal te maken.");
+            
+            const groupDisplay = currentGroup === '7' ? '7 of 8' : currentGroup;
+            const userPrompt = `Schrijf een heel kort, grappig en eenvoudig verhaaltje in het Nederlands voor een kind in groep ${groupDisplay}. Het verhaal moet de volgende woorden bevatten: ${wordList.join(', ')}. Maak de woorden uit de lijst dikgedrukt in de tekst door ze te omringen met **. Zorg ervoor dat het verhaal logisch en makkelijk te lezen is.`;
+            const systemPrompt = `Je bent een creatieve kinderboekenschrijver. Schrijf een kort, positief en grappig verhaal.`;
+            
+            const jsonResponseString = await callGeminiAPI(userPrompt, systemPrompt);
+            const storyObject = JSON.parse(jsonResponseString);
+            const storyText = storyObject.story; // Assuming the story is in a 'story' key
+
+            if (!storyText) throw new Error("Kon geen verhaal genereren.");
+            
+            const formattedStory = storyText.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>');
+            const storyOutput = document.getElementById('story-output');
+            storyOutput.innerHTML = `<p>${formattedStory}</p>`;
+        } catch (error) {
+            console.error('Error generating story:', error);
+            const storyOutput = document.getElementById('story-output');
+            if (storyOutput) {
+                storyOutput.innerHTML = `<p class="text-red-600">Oeps, er ging iets mis bij het maken van het verhaal: ${error.message}</p>`;
+            }
+        } finally {
+            storyBtn.disabled = false;
+            storyBtn.innerHTML = `✨ Maak een Verhaal`;
+        }
     }
 
     window.speak = function(text) {
-        // ... (deze functie blijft hetzelfde, hoewel hij niet meer wordt gebruikt)
+        if ('speechSynthesis' in window) {
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = 'nl-NL';
+            window.speechSynthesis.cancel();
+            window.speechSynthesis.speak(utterance);
+        } else {
+            showNotification("Sorry, je browser ondersteunt de voorleesfunctie niet.", true);
+        }
     }
 
     window.printStudentWorksheet = function() {

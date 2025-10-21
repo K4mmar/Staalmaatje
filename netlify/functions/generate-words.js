@@ -23,10 +23,9 @@ exports.handler = async (event) => {
     if (!systemPrompt || !userQuery) {
         return { statusCode: 400, body: JSON.stringify({ error: 'Prompt of query ontbreekt in de request body.' }) };
     }
-
+    
     const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
 
-    // Stel de payload samen voor de Gemini API.
     const payload = {
       contents: [{
         parts: [{ text: userQuery }]
@@ -51,11 +50,15 @@ exports.handler = async (event) => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
     });
-
+    
     if (!response.ok) {
       const errorBody = await response.text();
       console.error('Gemini API Error:', errorBody);
-      throw new Error(`Gemini API request mislukt met status ${response.status}`);
+      // Stuur de statuscode van de Gemini API door voor betere foutafhandeling
+      return {
+        statusCode: response.status,
+        body: JSON.stringify({ error: `Gemini API request mislukt: ${errorBody}` }),
+      };
     }
 
     const data = await response.json();
@@ -65,7 +68,7 @@ exports.handler = async (event) => {
         throw new Error("De AI gaf een leeg of ongeldig antwoord.");
     }
     
-    // CORRECTIE: We sturen de JSON-string direct terug, zonder hem opnieuw te stringify-en.
+    // We sturen de JSON-string direct door.
     return {
       statusCode: 200,
       headers: { 'Content-Type': 'application/json' },
