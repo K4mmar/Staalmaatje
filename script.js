@@ -69,11 +69,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const style = document.createElement('style');
     style.innerHTML = `
         @media print { 
-            @page { size: A4 portrait; } 
+            @page { size: A4 portrait; margin: 1.5cm; } 
             #student-sheet, #answer-sheet { display: none; }
             body.print-student-sheet #student-sheet { display: block; }
             body.print-answer-sheet #answer-sheet { display: block; }
             .no-print { display: none !important; }
+            .printable-area { box-shadow: none !important; border: none !important; }
         }
     `;
     document.head.appendChild(style);
@@ -187,15 +188,13 @@ document.addEventListener('DOMContentLoaded', () => {
     async function generateWorksheetWithAI(selectedCatIds) {
         const generateButton = document.getElementById('generate-btn');
         generateButton.disabled = true;
-        generateButton.innerHTML = `<i class="fas fa-spinner fa-spin mr-2"></i> Werkblad wordt gemaakt...`;
+        generateButton.innerHTML = `<i class="fas fa-spinner fa-spin mr-2"></i> Woorden worden bedacht...`;
 
         try {
             const geselecteerdeRegels = spellingRegels.filter(regel => selectedCatIds.includes(regel.id));
             const groupDisplay = currentGroup === '7' ? '7 of 8' : currentGroup;
             
             const userQuery = `Genereer een spellingwerkblad voor groep ${groupDisplay} op basis van deze regels: ${JSON.stringify(geselecteerdeRegels, null, 2)}`;
-            
-            // --- AANGEPAST: Strakkere instructies voor de AI ---
             const systemPrompt = `Je bent een ervaren en creatieve leerkracht voor het basisonderwijs in Nederland, expert in de 'Staal' spellingmethode. Je taak is het genereren van een compleet, printklaar en didactisch verantwoord spellingwerkblad.
     
     Je volgt deze stappen:
@@ -214,11 +213,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 throw new Error("De AI gaf een onvolledig antwoord.");
             }
             
-            generateButton.innerHTML = `<i class="fas fa-magic mr-2"></i> Oefeningen worden verfijnd...`;
+            generateButton.innerHTML = `<i class="fas fa-spell-check mr-2"></i> Woorden worden gecontroleerd...`;
             let invalidWords = await validateWords(worksheetData.woordenlijst);
 
             if (invalidWords.length > 0) {
-                generateButton.innerHTML = `<i class="fas fa-wand-magic-sparkles mr-2"></i> Bijna klaar...`;
+                generateButton.innerHTML = `<i class="fas fa-wand-magic-sparkles mr-2"></i> Foutjes worden hersteld...`;
                 
                 const invalidWordsInfo = invalidWords.map(item => ({ original: item.woord, categorie: categories[item.categorie] }));
                 const correctionQuery = `Je hebt eerder de volgende woorden gegenereerd die spelfouten bevatten: ${JSON.stringify(invalidWordsInfo)}. Geef de correcte spelling voor elk van deze woorden.`;
@@ -301,6 +300,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    // --- AANGEPAST: Compleet nieuwe render functie voor een strakke layout ---
     function renderWorksheet(worksheetData, selectedCatIds) {
         const groupDisplay = currentGroup === '7' ? '7/8' : currentGroup;
     
@@ -316,7 +316,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const worksheetHeader = `
             <div class="flex justify-between items-center border-b-2 pb-2 mb-6">
                 <h2 class="text-2xl font-bold">Spellingwerkblad Groep ${groupDisplay}</h2>
-                <div class="flex gap-4">
+                <div class="flex gap-4 text-sm">
                     <span>Naam: _________________________</span>
                     <span>Datum: _____________</span>
                 </div>
@@ -326,35 +326,41 @@ document.addEventListener('DOMContentLoaded', () => {
         let studentSheetHTML = `
             ${worksheetHeader}
             ${wordListHeader}
-            <div class="space-y-8 text-lg">
+            <div class="space-y-6"> <!-- Ruimte tussen de 3 blokken -->
         `;
 
         const renderExerciseBlock = (title, exercises, startIndex) => {
-            const schrijfLijn = '____________________';
+            let blockHTML = `<div class="space-y-2"><h3 class="font-bold text-pink-600 border-b border-pink-200 pb-1 mb-3 text-xl">${title}</h3>`;
             
-            let blockHTML = `<div class="space-y-8"><h4 class="font-bold text-pink-600 border-b border-pink-200 pb-1">${title}</h4>`;
+            // Gebruik een grid voor de opdrachten voor een strakke uitlijning
+            blockHTML += '<div class="grid grid-cols-1 gap-4">';
+
             exercises.forEach((item, index) => {
                 const itemNumber = startIndex + index + 1;
-                let finalOpdrachtHTML = '';
-
-                // Case 1: Invulzin, placeholder is in de tekst
-                if (item.opdracht.includes('...........')) {
-                    finalOpdrachtHTML = `<p>${item.opdracht.replace('...........', `<span class="font-semibold text-gray-700">${schrijfLijn}</span>`)}</p>`;
-                } 
-                // Case 2 & 3: Kies_juiste_spelling en Regelvraag, lijn komt na de pijl
-                else {
-                    finalOpdrachtHTML = `<p>${item.opdracht} ⟶ <span class="font-semibold text-gray-700">${schrijfLijn}</span></p>`;
-                }
+                let opdrachtTekst = '';
                 
+                // Bepaal de tekst van de opdracht
+                if (item.opdracht.includes('...........')) {
+                    opdrachtTekst = item.opdracht.split('...........')[0]; // Alleen de tekst voor de lijn
+                } else if (item.opdracht.includes('⟶')) {
+                    opdrachtTekst = item.opdracht.split('⟶')[0].trim(); // Alleen de tekst voor de pijl
+                } else {
+                    opdrachtTekst = item.opdracht;
+                }
+
                 blockHTML += `
-                    <div class="grid grid-cols-[25px_1fr_auto] items-start gap-x-3">
-                        <span class="font-semibold">${itemNumber}.</span>
-                        <div>${finalOpdrachtHTML}</div>
-                        <div class="text-xs text-gray-400 text-right font-mono">${item.categorie}. ${categories[item.categorie] || ''}</div>
+                    <div class="p-3 border border-gray-200 rounded-lg flex items-start gap-3 relative">
+                        <span class="font-semibold text-gray-500">${itemNumber}.</span>
+                        <div class="flex-grow">
+                            <p class="text-base">${opdrachtTekst}</p>
+                            <div class="mt-2 h-8 border-b-2 border-gray-300"></div>
+                        </div>
+                        <span class="absolute top-2 right-2 text-xs text-gray-400 bg-gray-100 px-2 py-1 rounded-full">${categories[item.categorie] || ''}</span>
                     </div>
                 `;
             });
-            blockHTML += `</div>`;
+
+            blockHTML += `</div></div>`; // Sluit de grid en de block div
             return blockHTML;
         };
         
