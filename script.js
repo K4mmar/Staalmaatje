@@ -212,12 +212,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 throw new Error("De AI gaf een onvolledig antwoord.");
             }
             
-            // --- AANGEPAST: Professionelere melding ---
             generateButton.innerHTML = `<i class="fas fa-magic mr-2"></i> Oefeningen worden verfijnd...`;
             let invalidWords = await validateWords(worksheetData.woordenlijst);
 
             if (invalidWords.length > 0) {
-                // --- AANGEPAST: Professionelere melding ---
                 generateButton.innerHTML = `<i class="fas fa-wand-magic-sparkles mr-2"></i> Bijna klaar...`;
                 
                 const invalidWordsInfo = invalidWords.map(item => ({ original: item.woord, categorie: categories[item.categorie] }));
@@ -326,14 +324,14 @@ document.addEventListener('DOMContentLoaded', () => {
         let studentSheetHTML = `
             ${worksheetHeader}
             ${wordListHeader}
-            <div class="space-y-6 text-lg">
+            <div class="space-y-8 text-lg"> <!-- Meer ruimte tussen blokken -->
         `;
 
         const renderExerciseBlock = (title, exercises, startIndex) => {
-            let blockHTML = `<div class="space-y-5"><h4 class="font-bold text-pink-600 border-b border-pink-200 pb-1">${title}</h4>`;
+            // --- AANGEPAST: Nummering uit de titel verwijderd ---
+            let blockHTML = `<div class="space-y-6"><h4 class="font-bold text-pink-600 border-b border-pink-200 pb-1">${title}</h4>`;
             exercises.forEach((item, index) => {
                 const itemNumber = startIndex + index + 1;
-                // De 'opdracht' bevat nu de hele vraag, we vervangen '...........' voor de opmaak.
                 let opdrachtHTML = `<p>${item.opdracht.replace(/(\S*\[doelwoord\]\S*)/, '...........').replace('[doelwoord]', '...........')}</p>`;
                 
                 blockHTML += `
@@ -348,9 +346,10 @@ document.addEventListener('DOMContentLoaded', () => {
             return blockHTML;
         };
         
-        studentSheetHTML += renderExerciseBlock('Opdracht 1-5: Vul het juiste woord in', worksheetData.oefeningen.invulzinnen, 0);
-        studentSheetHTML += renderExerciseBlock('Opdracht 6-10: Kies de juiste spelling', worksheetData.oefeningen.kies_juiste_spelling, 5);
-        studentSheetHTML += renderExerciseBlock('Opdracht 11-15: Pas de spellingregel toe', worksheetData.oefeningen.regelvragen, 10);
+        // --- AANGEPAST: Titels zonder nummering ---
+        studentSheetHTML += renderExerciseBlock('Vul het juiste woord in', worksheetData.oefeningen.invulzinnen, 0);
+        studentSheetHTML += renderExerciseBlock('Kies de juiste spelling', worksheetData.oefeningen.kies_juiste_spelling, 5);
+        studentSheetHTML += renderExerciseBlock('Pas de spellingregel toe', worksheetData.oefeningen.regelvragen, 10);
         
         studentSheetHTML += `</div>`;
 
