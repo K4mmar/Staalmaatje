@@ -183,8 +183,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const results = await Promise.all(validationPromises);
         return results.filter(r => !r.isValid);
     }
-
-    // --- AANGEPAST MET EFFICIËNTER ZELFHERSTELLEND MECHANISME ---
+    
     async function generateWorksheetWithAI(selectedCatIds) {
         const generateButton = document.getElementById('generate-btn');
         generateButton.disabled = true;
@@ -195,6 +194,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const groupDisplay = currentGroup === '7' ? '7 of 8' : currentGroup;
             
             const userQuery = `Genereer een spellingwerkblad voor groep ${groupDisplay} op basis van deze regels: ${JSON.stringify(geselecteerdeRegels, null, 2)}`;
+            // --- AANGEPAST: Verbeterde, meer directieve prompt voor 'regelvragen' ---
             const systemPrompt = `Je bent een ervaren en creatieve leerkracht voor het basisonderwijs in Nederland, expert in de 'Staal' spellingmethode. Je taak is het genereren van een compleet, printklaar en didactisch verantwoord spellingwerkblad.
     
     Je volgt deze stappen:
@@ -202,7 +202,7 @@ document.addEventListener('DOMContentLoaded', () => {
     2.  **Maak 3 Soorten Oefeningen:** Gebruik deze 15 woorden om 3 verschillende soorten oefeningen te maken. Elke oefeningsoort gebruikt 5 unieke woorden uit de lijst. Zorg dat elk woord precies één keer wordt gebruikt.
         - **Vorm 1: 'invulzinnen' (5 woorden):** Maak een zin en vervang het doelwoord door '...........'.
         - **Vorm 2: 'kies_juiste_spelling' (5 woorden):** Maak een opdracht waarbij de leerling moet kiezen tussen het correct gespelde woord en een veelvoorkomende, fonetische fout (bv. 'hond/hont', 'pauw/pau', 'geit/gijt').
-        - **Vorm 3: 'regelvragen' (5 woorden):** Stel een korte vraag die de leerling dwingt de spellingstrategie toe te passen (bv. "Maak het meervoud: ...", "Maak het woord langer: ...", "Verklein het woord: ...").
+        - **Vorm 3: 'regelvragen' (5 woorden):** Maak een concrete vraag die de strategie test en het doelwoord als antwoord heeft. GEBRUIK DEZE VOORBEELDEN: "Maak het meervoud: 1 ..., 2 [doelwoord]", "Maak het langer: ... - [doelwoord]", "Maak het verkleinwoord: ... wordt [doelwoord]", "Voeg samen: ... + ... = [doelwoord]". De vraag moet de leerling helpen het doelwoord in te vullen. Vragen als 'wat is het grondwoord' zijn NIET toegestaan.
     3.  **Lever het resultaat** als een perfect gestructureerd JSON-object. Gebruik exact dit formaat:
         \`{ "woordenlijst": [ { "woord": "voorbeeld", "categorie": 10 }, ... ], "oefeningen": { "invulzinnen": [ { "opdracht": "...", "woord": "...", "categorie": ... } ], "kies_juiste_spelling": [ { "opdracht": "Kies: ... / ...", "woord": "...", "categorie": ... } ], "regelvragen": [ { "opdracht": "...", "woord": "...", "categorie": ... } ] } }\``;
     
@@ -216,7 +216,6 @@ document.addEventListener('DOMContentLoaded', () => {
             generateButton.innerHTML = `<i class="fas fa-check-double mr-2"></i> Woorden worden gecontroleerd...`;
             let invalidWords = await validateWords(worksheetData.woordenlijst);
 
-            // Efficiënte correctie-stap
             if (invalidWords.length > 0) {
                 generateButton.innerHTML = `<i class="fas fa-wrench mr-2"></i> Spelfouten worden gecorrigeerd...`;
                 
@@ -232,16 +231,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     throw new Error("Kon de spelfouten niet automatisch corrigeren.");
                 }
 
-                // Maak een 'map' voor snelle vervanging
                 const correctionMap = new Map(corrections.map(c => [c.origineel, c.correct]));
 
-                // Vervang de foute woorden in de originele data
                 worksheetData.woordenlijst.forEach(item => {
                     if (correctionMap.has(item.woord)) {
                         item.woord = correctionMap.get(item.woord);
                     }
                 });
-                // Doe hetzelfde voor alle oefeningen
+
                 Object.values(worksheetData.oefeningen).flat().forEach(ex => {
                     if (correctionMap.has(ex.woord)) {
                         const originalWord = ex.woord;
@@ -284,10 +281,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (!response.ok) {
                 let errorMsg = `Serverfout (status ${response.status})`;
-                // Probeer de JSON-foutmelding te parsen voor meer detail
                 try {
                     const errorJson = JSON.parse(responseText);
-                    // Specifiek voor quota-fouten
                     if (errorJson.error && errorJson.error.message.toLowerCase().includes('quota')) {
                        throw new Error("429: Quota Exceeded");
                     }
@@ -301,7 +296,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
         } catch (error) {
             console.error("Fout bij het aanroepen van de Netlify Function:", error);
-            // Gooi de error verder om in de hoofdlogica af te vangen
             throw error;
         }
     }
@@ -338,12 +332,13 @@ document.addEventListener('DOMContentLoaded', () => {
             let blockHTML = `<div class="space-y-5"><h4 class="font-bold text-pink-600 border-b border-pink-200 pb-1">${title}</h4>`;
             exercises.forEach((item, index) => {
                 const itemNumber = startIndex + index + 1;
-                let opdrachtHTML = `<p>${item.opdracht.replace('...........', '<span class="font-semibold text-gray-700">...........</span>')}</p>`;
+                // De 'opdracht' bevat nu de hele vraag, we vervangen '...........' voor de opmaak.
+                let opdrachtHTML = `<p>${item.opdracht.replace(/(\S*\[doelwoord\]\S*)/, '...........').replace('[doelwoord]', '...........')}</p>`;
                 
                 blockHTML += `
                     <div class="grid grid-cols-[25px_1fr_auto] items-start gap-x-3">
                         <span class="font-semibold">${itemNumber}.</span>
-                        <div>${opdrachtHTML}</div>
+                        <div>${opdrachtHTML.replace('...........', '<span class="font-semibold text-gray-700">...........</span>')}</div>
                         <div class="text-xs text-gray-400 text-right font-mono">${item.categorie}. ${categories[item.categorie] || ''}</div>
                     </div>
                 `;
