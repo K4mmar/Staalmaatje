@@ -24,7 +24,7 @@ exports.handler = async (event) => {
         return { statusCode: 400, body: JSON.stringify({ error: 'Prompt of query ontbreekt in de request body.' }) };
     }
 
-    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-25:generateContent?key=${apiKey}`;
 
     // Stel de payload samen voor de Gemini API.
     const payload = {
@@ -37,7 +37,26 @@ exports.handler = async (event) => {
       generationConfig: {
         responseMimeType: "application/json",
         temperature: 0.7,
-      }
+      },
+      // We passen de veiligheidsinstellingen aan om te voorkomen dat de AI te voorzichtig is.
+      safetySettings: [
+        {
+          category: "HARM_CATEGORY_HARASSMENT",
+          threshold: "BLOCK_NONE"
+        },
+        {
+          category: "HARM_CATEGORY_HATE_SPEECH",
+          threshold: "BLOCK_NONE"
+        },
+        {
+          category: "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+          threshold: "BLOCK_NONE"
+        },
+        {
+          category: "HARM_CATEGORY_DANGEROUS_CONTENT",
+          threshold: "BLOCK_NONE"
+        }
+      ]
     };
 
     // Roep de Gemini API aan met de payload.
@@ -60,7 +79,7 @@ exports.handler = async (event) => {
     return {
       statusCode: 200,
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data),
+      body: JSON.stringify(data.candidates[0].content.parts[0].text),
     };
 
   } catch (error) {
