@@ -62,7 +62,7 @@ const groupCategories = {
 // ===================================================================================
 // APP LOGICA
 // ===================================================================================
-let currentWorksheetWords = [];
+let currentWorksheetData = {};
 let currentGroup = null;
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -174,25 +174,28 @@ document.addEventListener('DOMContentLoaded', () => {
             const geselecteerdeRegels = spellingRegels.filter(regel => selectedCatIds.includes(regel.id));
             const groupDisplay = currentGroup === '7' ? '7 of 8' : currentGroup;
             
-            const userQuery = `Maak 12 spellingoefeningen voor groep ${groupDisplay} op basis van deze regels: ${JSON.stringify(geselecteerdeRegels, null, 2)}`;
-            const systemPrompt = `Je bent een ervaren en creatieve leerkracht voor het basisonderwijs in Nederland, expert in de 'Staal' spellingmethode. Je taak is het genereren van een gevarieerd en didactisch verantwoord spellingwerkblad.
-            - Genereer een mix van de volgende 3 opdrachttypes: 'invulzin', 'husselwoord', en 'regelvraag'.
-            - 'invulzin': Maak een zin en vervang het doelwoord door '...........'.
-            - 'husselwoord': Hussel de letters van het doelwoord en geef de gehusselde letters als opdracht.
-            - 'regelvraag': Stel een korte, duidelijke vraag die de leerling helpt de spellingregel toe te passen (bv. "Maak het woord langer: ...").
-            - Pas de moeilijkheidsgraad van zinnen en woordkeus aan op de groep.
-            - Lever het resultaat als een perfect gestructureerd JSON-object. Gebruik dit formaat: \`{ "opdrachten": [ { "type": "invulzin", "opdracht": "De ............ blaft hard.", "woord": "hond", "categorie": 8 }, ... ] }\`.`;
+            // --- VERNIEUWDE, KRACHTIGERE PROMPT ---
+            const userQuery = `Genereer een spellingwerkblad voor groep ${groupDisplay} op basis van deze regels: ${JSON.stringify(geselecteerdeRegels, null, 2)}`;
+            const systemPrompt = `Je bent een ervaren en creatieve leerkracht voor het basisonderwijs in Nederland, expert in de 'Staal' spellingmethode. Je taak is het genereren van een compleet, printklaar en didactisch verantwoord spellingwerkblad.
+
+Je volgt deze stappen:
+1.  **Genereer 15 Woorden:** Maak eerst een lijst van 15 unieke, voor de groep geschikte woorden die passen bij de opgegeven spellingcategorieën.
+2.  **Maak 3 Soorten Oefeningen:** Gebruik deze 15 woorden om 3 verschillende soorten oefeningen te maken. Elke oefeningsoort gebruikt 5 unieke woorden uit de lijst. Zorg dat elk woord precies één keer wordt gebruikt.
+    - **Vorm 1: 'invulzinnen' (5 woorden):** Maak een zin en vervang het doelwoord door '...........'.
+    - **Vorm 2: 'kies_juiste_spelling' (5 woorden):** Maak een opdracht waarbij de leerling moet kiezen tussen het correct gespelde woord en een veelvoorkomende, fonetische fout (bv. 'hond/hont', 'pauw/pau', 'geit/gijt').
+    - **Vorm 3: 'regelvragen' (5 woorden):** Stel een korte vraag die de leerling dwingt de spellingstrategie toe te passen (bv. "Maak het meervoud: ...", "Maak het woord langer: ...", "Verklein het woord: ...").
+3.  **Lever het resultaat** als een perfect gestructureerd JSON-object. Gebruik exact dit formaat:
+    \`{ "woordenlijst": [ { "woord": "voorbeeld", "categorie": 10 }, ... ], "oefeningen": { "invulzinnen": [ { "opdracht": "...", "woord": "...", "categorie": ... } ], "kies_juiste_spelling": [ { "opdracht": "Kies: ... / ...", "woord": "...", "categorie": ... } ], "regelvragen": [ { "opdracht": "...", "woord": "...", "categorie": ... } ] } }\``;
 
             const jsonResponseString = await callGeminiAPI(userQuery, systemPrompt);
-            const resultObject = JSON.parse(jsonResponseString);
-            const worksheetItems = resultObject.opdrachten;
+            const worksheetData = JSON.parse(jsonResponseString);
 
-            if (!worksheetItems || worksheetItems.length === 0) {
-                throw new Error("De AI kon geen opdrachten genereren.");
+            if (!worksheetData || !worksheetData.woordenlijst || !worksheetData.oefeningen) {
+                throw new Error("De AI gaf een onvolledig antwoord.");
             }
             
-            currentWorksheetWords = worksheetItems;
-            renderWorksheet(worksheetItems, selectedCatIds);
+            currentWorksheetData = worksheetData;
+            renderWorksheet(worksheetData, selectedCatIds);
 
         } catch (error) {
             console.error("Fout bij genereren van AI werkblad:", error);
@@ -241,19 +244,14 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    function renderWorksheet(items, selectedCatIds) {
+    function renderWorksheet(worksheetData, selectedCatIds) {
         const groupDisplay = currentGroup === '7' ? '7/8' : currentGroup;
     
-        // --- AANGEPAST: Woordenlijst zonder icoontjes ---
         const wordListHeader = `
             <div class="mb-8 p-4 border rounded-lg bg-gray-50">
-                <h3 class="font-semibold text-lg mb-2">Woorden in dit werkblad:</h3>
-                <div class="grid grid-cols-3 gap-x-6 gap-y-1 text-gray-700">
-                    ${items.map(item => `
-                        <div class="flex items-center">
-                            <span>${item.woord}</span>
-                        </div>
-                    `).join('')}
+                <h3 class="font-semibold text-lg mb-2">Dit zijn je 15 oefenwoorden:</h3>
+                <div class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-x-6 gap-y-1 text-gray-700">
+                    ${worksheetData.woordenlijst.map(item => `<span>${item.woord}</span>`).join('')}
                 </div>
             </div>
         `;
@@ -268,38 +266,46 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
         `;
     
+        // --- VERNIEUWDE OPBOUW WERKBLAD ---
         let studentSheetHTML = `
             ${worksheetHeader}
             ${wordListHeader}
-            <div class="space-y-5 text-lg">
+            <div class="space-y-6 text-lg">
         `;
 
-        items.forEach((item, index) => {
-            let opdrachtHTML = '';
-            switch (item.type) {
-                case 'invulzin':
-                    opdrachtHTML = `<p>${item.opdracht.replace('...........', '<span class="font-semibold text-gray-700">...........</span>')}</p>`;
-                    break;
-                case 'husselwoord':
-                    opdrachtHTML = `<p><span class="font-mono text-blue-600 bg-blue-100 px-2 py-1 rounded-md">${item.opdracht}</span> ⟶ <span class="font-semibold text-gray-700">...........</span></p>`;
-                    break;
-                case 'regelvraag':
-                    opdrachtHTML = `<p class="text-gray-600 italic">Vraag: ${item.opdracht} <span class="font-semibold text-gray-700">...........</span></p>`;
-                    break;
-                default:
-                    opdrachtHTML = `<p>${item.opdracht}</p>`;
-            }
+        // Functie om een set opdrachten te renderen
+        const renderExerciseBlock = (title, exercises, startIndex) => {
+            let blockHTML = `<div class="space-y-5"><h4 class="font-bold text-pink-600 border-b border-pink-200 pb-1">${title}</h4>`;
+            exercises.forEach((item, index) => {
+                const itemNumber = startIndex + index + 1;
+                let opdrachtHTML = '';
+                // Genereer HTML op basis van het opdrachttype (dit kan nog specifieker)
+                opdrachtHTML = `<p>${item.opdracht.replace('...........', '<span class="font-semibold text-gray-700">...........</span>')}</p>`;
+                
+                blockHTML += `
+                    <div class="grid grid-cols-[25px_1fr_auto] items-start gap-x-3">
+                        <span class="font-semibold">${itemNumber}.</span>
+                        <div>${opdrachtHTML}</div>
+                        <div class="text-xs text-gray-400 text-right font-mono">${item.categorie}. ${categories[item.categorie] || ''}</div>
+                    </div>
+                `;
+            });
+            blockHTML += `</div>`;
+            return blockHTML;
+        };
+        
+        studentSheetHTML += renderExerciseBlock('Opdracht 1-5: Vul het juiste woord in', worksheetData.oefeningen.invulzinnen, 0);
+        studentSheetHTML += renderExerciseBlock('Opdracht 6-10: Kies de juiste spelling', worksheetData.oefeningen.kies_juiste_spelling, 5);
+        studentSheetHTML += renderExerciseBlock('Opdracht 11-15: Pas de spellingregel toe', worksheetData.oefeningen.regelvragen, 10);
+        
+        studentSheetHTML += `</div>`; // Sluit de hoofd div af
 
-            studentSheetHTML += `
-                <div class="grid grid-cols-[25px_1fr_auto] items-start gap-x-3">
-                    <span class="font-semibold">${index + 1}.</span>
-                    <div>${opdrachtHTML}</div>
-                    <div class="text-xs text-gray-400 text-right font-mono">${item.categorie}. ${categories[item.categorie] || ''}</div>
-                </div>
-            `;
-        });
-
-        studentSheetHTML += `</div>`;
+        // --- VERNIEUWD ANTWOORDENBLAD ---
+        const allExercises = [
+            ...worksheetData.oefeningen.invulzinnen,
+            ...worksheetData.oefeningen.kies_juiste_spelling,
+            ...worksheetData.oefeningen.regelvragen
+        ];
 
         const answerSheetHTML = `
             <h2 class="text-2xl font-bold mb-1">Antwoordenblad Groep ${groupDisplay}</h2>
@@ -307,12 +313,12 @@ document.addEventListener('DOMContentLoaded', () => {
             <table class="w-full">
                 <thead><tr class="border-b"><th class="text-left py-2">Nr.</th><th class="text-left py-2">Woord</th><th class="text-left py-2">Categorie</th><th class="text-left py-2">Opdracht</th></tr></thead>
                 <tbody>
-                    ${items.map((item, index) => `
+                    ${allExercises.map((item, index) => `
                         <tr class="border-b">
                             <td class="py-2 align-top">${index + 1}.</td>
                             <td class="py-2 align-top font-semibold">${item.woord}</td>
                             <td class="py-2 align-top">${item.categorie}. ${categories[item.categorie] || ''}</td>
-                            <td class="py-2 align-top text-sm">${item.type}: ${item.opdracht}</td>
+                            <td class="py-2 align-top text-sm">${item.opdracht}</td>
                         </tr>
                     `).join('')}
                 </tbody>
@@ -342,10 +348,42 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     window.generateStory = async function() {
-        // ... (deze functie blijft ongewijzigd)
-    }
+        const storyBtn = document.getElementById('generate-story-btn');
+        const storyContainer = document.getElementById('story-container');
+        if (!storyBtn || !storyContainer || !currentWorksheetData.woordenlijst) return;
 
-    // ... (rest van de window. functies blijven ongewijzigd)
+        storyBtn.disabled = true;
+        storyBtn.innerHTML = `<i class="fas fa-spinner fa-spin mr-2"></i> Verhaal wordt gemaakt...`;
+        storyContainer.innerHTML = `<h3 class="text-2xl font-bold mb-4">✨ Jouw unieke verhaal!</h3><div id="story-output" class="p-4 bg-purple-50 rounded-lg border border-purple-200 min-h-[100px]"><p>Een momentje, de woorden-elfjes zijn druk aan het schrijven...</p></div>`;
+
+        try {
+            const wordList = currentWorksheetData.woordenlijst.map(item => item.woord);
+            if (wordList.length === 0) throw new Error("Geen woorden om een verhaal te maken.");
+            
+            const groupDisplay = currentGroup === '7' ? '7 of 8' : currentGroup;
+            const userPrompt = `Schrijf een heel kort, grappig en eenvoudig verhaaltje in het Nederlands voor een kind in groep ${groupDisplay}. Het verhaal moet de volgende woorden bevatten: ${wordList.join(', ')}. Maak de woorden uit de lijst dikgedrukt in de tekst door ze te omringen met **. Zorg ervoor dat het verhaal logisch en makkelijk te lezen is.`;
+            const systemPrompt = `Je bent een creatieve kinderboekenschrijver. Schrijf een kort, positief en grappig verhaal.`;
+            
+            const jsonResponseString = await callGeminiAPI(userPrompt, systemPrompt);
+            // We verwachten nu een simpele string terug, geen complex JSON object.
+            const storyText = JSON.parse(jsonResponseString).story || jsonResponseString; 
+
+            if (!storyText) throw new Error("Kon geen verhaal genereren.");
+            
+            const formattedStory = storyText.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>');
+            const storyOutput = document.getElementById('story-output');
+            storyOutput.innerHTML = `<p>${formattedStory}</p>`;
+        } catch (error) {
+            console.error('Error generating story:', error);
+            const storyOutput = document.getElementById('story-output');
+            if (storyOutput) {
+                storyOutput.innerHTML = `<p class="text-red-600">Oeps, er ging iets mis bij het maken van het verhaal: ${error.message}</p>`;
+            }
+        } finally {
+            storyBtn.disabled = false;
+            storyBtn.innerHTML = `✨ Maak een Verhaal`;
+        }
+    }
 
     window.printStudentWorksheet = function() {
         document.body.classList.remove('print-answer-sheet');
