@@ -194,14 +194,16 @@ document.addEventListener('DOMContentLoaded', () => {
             const groupDisplay = currentGroup === '7' ? '7 of 8' : currentGroup;
             
             const userQuery = `Genereer een spellingwerkblad voor groep ${groupDisplay} op basis van deze regels: ${JSON.stringify(geselecteerdeRegels, null, 2)}`;
+            
+            // --- AANGEPAST: Strakkere instructies voor de AI ---
             const systemPrompt = `Je bent een ervaren en creatieve leerkracht voor het basisonderwijs in Nederland, expert in de 'Staal' spellingmethode. Je taak is het genereren van een compleet, printklaar en didactisch verantwoord spellingwerkblad.
     
     Je volgt deze stappen:
     1.  **Genereer 15 Woorden:** Maak eerst een lijst van 15 unieke, voor de groep geschikte woorden die passen bij de opgegeven spellingcategorieën. **BELANGRIJK: Alle gegenereerde woorden moeten 100% correct gespeld zijn en voorkomen in het Nederlandse woordenboek.**
     2.  **Maak 3 Soorten Oefeningen:** Gebruik deze 15 woorden om 3 verschillende soorten oefeningen te maken. Elke oefeningsoort gebruikt 5 unieke woorden uit de lijst. Zorg dat elk woord precies één keer wordt gebruikt.
         - **Vorm 1: 'invulzinnen' (5 woorden):** Maak een zin en vervang het doelwoord door '...........'.
-        - **Vorm 2: 'kies_juiste_spelling' (5 woorden):** Maak een opdracht waarbij de leerling moet kiezen tussen het correct gespelde woord en een veelvoorkomende, fonetische fout (bv. 'hond/hont', 'pauw/pau', 'geit/gijt').
-        - **Vorm 3: 'regelvragen' (5 woorden):** Maak een concrete vraag die de strategie test en het doelwoord als antwoord heeft. GEBRUIK DEZE VOORBEELDEN: "Maak het meervoud: 1 ..., 2 [doelwoord]", "Maak het langer: ... - [doelwoord]", "Maak het verkleinwoord: ... wordt [doelwoord]", "Voeg samen: ... + ... = [doelwoord]". De vraag moet de leerling helpen het doelwoord in te vullen. Vragen als 'wat is het grondwoord' zijn NIET toegestaan.
+        - **Vorm 2: 'kies_juiste_spelling' (5 woorden):** Maak een opdracht waarbij de leerling moet kiezen tussen het correct gespelde woord en een veelvoorkomende, fonetische fout (bv. 'hond / hont', 'pauw / pau', 'geit / gijt').
+        - **Vorm 3: 'regelvragen' (5 woorden):** Maak een concrete vraag die de spellingstrategie test. **BELANGRIJK: De vraag MOET één van deze formats gebruiken:** "Maak het meervoud: [enkelvoudsvorm] ⟶", "Maak het langer: [verkorte vorm] ⟶", "Maak het verkleinwoord: [grondwoord] ⟶", of "Voeg samen: [deel 1] + [deel 2] ⟶". De vraag moet de leerling leiden naar het invullen van het doelwoord. Abstracte vragen over betekenis zijn STRIKT VERBODEN.
     3.  **Lever het resultaat** als een perfect gestructureerd JSON-object. Gebruik exact dit formaat:
         \`{ "woordenlijst": [ { "woord": "voorbeeld", "categorie": 10 }, ... ], "oefeningen": { "invulzinnen": [ { "opdracht": "...", "woord": "...", "categorie": ... } ], "kies_juiste_spelling": [ { "opdracht": "Kies: ... / ...", "woord": "...", "categorie": ... } ], "regelvragen": [ { "opdracht": "...", "woord": "...", "categorie": ... } ] } }\``;
     
@@ -315,8 +317,8 @@ document.addEventListener('DOMContentLoaded', () => {
             <div class="flex justify-between items-center border-b-2 pb-2 mb-6">
                 <h2 class="text-2xl font-bold">Spellingwerkblad Groep ${groupDisplay}</h2>
                 <div class="flex gap-4">
-                    <span>Naam: ............................................</span>
-                    <span>Datum: ...........................</span>
+                    <span>Naam: _________________________</span>
+                    <span>Datum: _____________</span>
                 </div>
             </div>
         `;
@@ -328,19 +330,26 @@ document.addEventListener('DOMContentLoaded', () => {
         `;
 
         const renderExerciseBlock = (title, exercises, startIndex) => {
-            // --- AANGEPAST: Logica voor de schrijflijn ---
-            const schrijfLijn = '____________________'; // Gebruik streepjes
+            const schrijfLijn = '____________________';
             
             let blockHTML = `<div class="space-y-8"><h4 class="font-bold text-pink-600 border-b border-pink-200 pb-1">${title}</h4>`;
             exercises.forEach((item, index) => {
                 const itemNumber = startIndex + index + 1;
-                // Vervang zowel de placeholder als de oude stippellijn door de nieuwe schrijflijn
-                let opdrachtHTML = `<p>${item.opdracht.replace(/(\S*\[doelwoord\]\S*)/, schrijfLijn).replace('[doelwoord]', schrijfLijn).replace('...........', schrijfLijn)}</p>`;
+                let finalOpdrachtHTML = '';
+
+                // Case 1: Invulzin, placeholder is in de tekst
+                if (item.opdracht.includes('...........')) {
+                    finalOpdrachtHTML = `<p>${item.opdracht.replace('...........', `<span class="font-semibold text-gray-700">${schrijfLijn}</span>`)}</p>`;
+                } 
+                // Case 2 & 3: Kies_juiste_spelling en Regelvraag, lijn komt na de pijl
+                else {
+                    finalOpdrachtHTML = `<p>${item.opdracht} ⟶ <span class="font-semibold text-gray-700">${schrijfLijn}</span></p>`;
+                }
                 
                 blockHTML += `
                     <div class="grid grid-cols-[25px_1fr_auto] items-start gap-x-3">
                         <span class="font-semibold">${itemNumber}.</span>
-                        <div>${opdrachtHTML.replace(schrijfLijn, `<span class="font-semibold text-gray-700">${schrijfLijn}</span>`)}</div>
+                        <div>${finalOpdrachtHTML}</div>
                         <div class="text-xs text-gray-400 text-right font-mono">${item.categorie}. ${categories[item.categorie] || ''}</div>
                     </div>
                 `;
