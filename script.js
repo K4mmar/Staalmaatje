@@ -66,6 +66,11 @@ let currentWorksheetWords = [];
 let currentGroup = null;
 
 document.addEventListener('DOMContentLoaded', () => {
+    // AANPASSING: Standaard printen op staand A4
+    const style = document.createElement('style');
+    style.innerHTML = `@media print { @page { size: A4 portrait; } }`;
+    document.head.appendChild(style);
+
     const groupButtonsContainer = document.getElementById('group-buttons');
     const categorySelection = document.getElementById('category-selection');
     const categoryList = document.getElementById('category-list');
@@ -211,7 +216,6 @@ document.addEventListener('DOMContentLoaded', () => {
     function renderWorksheet(words, selectedCatIds) {
         const groupDisplay = currentGroup === '7' ? '7/8' : currentGroup;
     
-        // AANPASSING: Werkblad header
         const worksheetHeader = `
             <div class="flex justify-between items-center border-b-2 pb-2 mb-6">
                 <h2 class="text-2xl font-bold">Spellingwerkblad Groep ${groupDisplay}</h2>
@@ -222,7 +226,6 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
         `;
     
-        // AANPASSING: Duidelijkere layout met meer schrijfruimte en categorienaam
         const studentSheetHTML = `
             ${worksheetHeader}
             <div style="display: grid; grid-template-columns: 20px 1fr auto; align-items: end; row-gap: 28px; font-size: 1.1rem;">
@@ -235,7 +238,8 @@ document.addEventListener('DOMContentLoaded', () => {
                        <button onclick="speak('${item.zin.replace(/\[|\]/g, '')}')" class="no-print text-blue-500 hover:text-blue-700 text-xl -mb-1"><i class="fas fa-volume-up"></i></button>
                        <div class="w-full border-b-2 border-dotted border-gray-400 pb-1"></div>
                    </div>
-                   <div class="border-b-2 border-dotted border-gray-400 h-10 text-center font-semibold text-gray-700 pt-2 text-base">
+                   <!-- AANPASSING: kleiner, lichter lettertype voor categorie -->
+                   <div class="border-b-2 border-dotted border-gray-400 h-10 text-center font-normal text-gray-500 pt-2 text-xs">
                         ${item.categorie}. ${categories[item.categorie] || ''}
                    </div>
                 `).join('')}
@@ -274,7 +278,7 @@ document.addEventListener('DOMContentLoaded', () => {
                          <input type="checkbox" id="include-answers" checked class="h-4 w-4 rounded border-gray-300 text-pink-600 focus:ring-pink-500"/>
                          <label for="include-answers" class="ml-2 block text-sm text-gray-900">Antwoordenblad toevoegen</label>
                      </div>
-                    <button onclick="printWorksheet()" class="bg-blue-600 text-white font-semibold py-2 px-6 rounded-full hover:bg-blue-700 transition-transform transform hover:scale-105">
+                    <button onclick="printWorksheet()" class="bg-blue-600 text-white font-semibold py-2 px-6 rounded-full hover:bg-blue-700 transition-transform transform transform hover:scale-105">
                         <i class="fas fa-print mr-2"></i> Printen
                     </button>
                     <button id="generate-story-btn" onclick="generateStory()" class="bg-purple-600 text-white font-semibold py-2 px-6 rounded-full hover:bg-purple-700 transition-transform transform hover:scale-105">
