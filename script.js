@@ -194,7 +194,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const groupDisplay = currentGroup === '7' ? '7 of 8' : currentGroup;
             
             const userQuery = `Genereer een spellingwerkblad voor groep ${groupDisplay} op basis van deze regels: ${JSON.stringify(geselecteerdeRegels, null, 2)}`;
-            // --- AANGEPAST: Verbeterde, meer directieve prompt voor 'regelvragen' ---
             const systemPrompt = `Je bent een ervaren en creatieve leerkracht voor het basisonderwijs in Nederland, expert in de 'Staal' spellingmethode. Je taak is het genereren van een compleet, printklaar en didactisch verantwoord spellingwerkblad.
     
     Je volgt deze stappen:
@@ -213,11 +212,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 throw new Error("De AI gaf een onvolledig antwoord.");
             }
             
-            generateButton.innerHTML = `<i class="fas fa-check-double mr-2"></i> Woorden worden gecontroleerd...`;
+            // --- AANGEPAST: Professionelere melding ---
+            generateButton.innerHTML = `<i class="fas fa-magic mr-2"></i> Oefeningen worden verfijnd...`;
             let invalidWords = await validateWords(worksheetData.woordenlijst);
 
             if (invalidWords.length > 0) {
-                generateButton.innerHTML = `<i class="fas fa-wrench mr-2"></i> Spelfouten worden gecorrigeerd...`;
+                // --- AANGEPAST: Professionelere melding ---
+                generateButton.innerHTML = `<i class="fas fa-wand-magic-sparkles mr-2"></i> Bijna klaar...`;
                 
                 const invalidWordsInfo = invalidWords.map(item => ({ original: item.woord, categorie: categories[item.categorie] }));
                 const correctionQuery = `Je hebt eerder de volgende woorden gegenereerd die spelfouten bevatten: ${JSON.stringify(invalidWordsInfo)}. Geef de correcte spelling voor elk van deze woorden.`;
