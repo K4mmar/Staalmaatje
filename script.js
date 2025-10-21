@@ -165,7 +165,6 @@ document.addEventListener('DOMContentLoaded', () => {
         await generateWorksheetWithAI(selectedCatIds);
     });
 
-    // --- AANGEPAST: Functie geeft nu de lijst met foute woorden terug ---
     async function validateWords(wordList) {
         const validationPromises = wordList.map(async (item) => {
             const word = item.woord;
@@ -185,7 +184,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return results.filter(r => !r.isValid);
     }
 
-    // --- AANGEPAST MET ZELFHERSTELLEND MECHANISME ---
+    // --- AANGEPAST MET EFFICIËNTER ZELFHERSTELLEND MECHANISME ---
     async function generateWorksheetWithAI(selectedCatIds) {
         const generateButton = document.getElementById('generate-btn');
         generateButton.disabled = true;
@@ -217,32 +216,38 @@ document.addEventListener('DOMContentLoaded', () => {
             generateButton.innerHTML = `<i class="fas fa-check-double mr-2"></i> Woorden worden gecontroleerd...`;
             let invalidWords = await validateWords(worksheetData.woordenlijst);
 
-            // Correctie-loop
+            // Efficiënte correctie-stap
             if (invalidWords.length > 0) {
                 generateButton.innerHTML = `<i class="fas fa-wrench mr-2"></i> Spelfouten worden gecorrigeerd...`;
                 
-                const correctionPromises = invalidWords.map(item => {
-                    const correctionQuery = `Het woord "${item.woord}" dat je hebt gegenereerd voor categorie "${categories[item.categorie]}" lijkt een spelfout. Geef alleen het correct gespelde Nederlandse woord dat je bedoelde.`;
-                    const correctionSystemPrompt = "Je bent een spellingcorrector. Geef alleen het correcte woord terug als platte tekst, zonder extra opmaak of uitleg.";
-                    return callGeminiAPI(correctionQuery, correctionSystemPrompt).then(res => ({ original: item.woord, corrected: JSON.parse(res).corrected_word || item.woord, ...item }));
-                });
-
-                const corrections = await Promise.all(correctionPromises);
+                const invalidWordsInfo = invalidWords.map(item => ({ original: item.woord, categorie: categories[item.categorie] }));
+                const correctionQuery = `Je hebt eerder de volgende woorden gegenereerd die spelfouten bevatten: ${JSON.stringify(invalidWordsInfo)}. Geef de correcte spelling voor elk van deze woorden.`;
+                const correctionSystemPrompt = `Je bent een spellingcorrector. Je krijgt een lijst met foute woorden en hun context (categorie). Geef een JSON-object terug dat de originele foute woorden koppelt aan hun correcte spelling. Gebruik dit formaat: \`{ "correcties": [ { "origineel": "foutwoord1", "correct": "goedwoord1" }, { "origineel": "foutwoord2", "correct": "goedwoord2" } ] }\``;
                 
+                const correctionResponseString = await callGeminiAPI(correctionQuery, correctionSystemPrompt);
+                const correctionData = JSON.parse(correctionResponseString);
+                const corrections = correctionData.correcties;
+
+                if (!corrections) {
+                    throw new Error("Kon de spelfouten niet automatisch corrigeren.");
+                }
+
+                // Maak een 'map' voor snelle vervanging
+                const correctionMap = new Map(corrections.map(c => [c.origineel, c.correct]));
+
                 // Vervang de foute woorden in de originele data
                 worksheetData.woordenlijst.forEach(item => {
-                    const correction = corrections.find(c => c.original === item.woord);
-                    if (correction) {
-                        item.woord = correction.corrected;
+                    if (correctionMap.has(item.woord)) {
+                        item.woord = correctionMap.get(item.woord);
                     }
                 });
                 // Doe hetzelfde voor alle oefeningen
                 Object.values(worksheetData.oefeningen).flat().forEach(ex => {
-                     const correction = corrections.find(c => c.original === ex.woord);
-                    if (correction) {
-                        ex.woord = correction.corrected;
-                        // Pas ook de opdracht aan indien nodig (simpele vervanging)
-                        ex.opdracht = ex.opdracht.replace(new RegExp(correction.original, 'g'), correction.corrected);
+                    if (correctionMap.has(ex.woord)) {
+                        const originalWord = ex.woord;
+                        const correctedWord = correctionMap.get(originalWord);
+                        ex.woord = correctedWord;
+                        ex.opdracht = ex.opdracht.replace(new RegExp(originalWord, 'g'), correctedWord);
                     }
                 });
             }
@@ -253,8 +258,10 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (error) {
             console.error("Fout bij genereren van AI werkblad:", error);
             let userMessage = `Oeps, er ging iets mis: ${error.message}`;
-            if (error.message.includes("503")) {
-                userMessage = "De AI-service is momenteel overbelast. Probeer het over een minuutje opnieuw.";
+            if (error.message.includes("429") || error.message.includes("quota")) {
+                userMessage = "De AI-limiet voor de gratis versie is bereikt. Probeer het over een minuutje opnieuw.";
+            } else if (error.message.includes("503")) {
+                userMessage = "De AI-service is momenteel overbelast. Probeer het later opnieuw.";
             }
             showNotification(userMessage, true);
         } finally {
@@ -276,15 +283,17 @@ document.addEventListener('DOMContentLoaded', () => {
             responseText = await response.text();
 
             if (!response.ok) {
-                if (response.status === 503) {
-                    throw new Error("503: Service Unavailable");
-                }
                 let errorMsg = `Serverfout (status ${response.status})`;
+                // Probeer de JSON-foutmelding te parsen voor meer detail
                 try {
                     const errorJson = JSON.parse(responseText);
-                    errorMsg = errorJson.error || responseText;
+                    // Specifiek voor quota-fouten
+                    if (errorJson.error && errorJson.error.message.toLowerCase().includes('quota')) {
+                       throw new Error("429: Quota Exceeded");
+                    }
+                    errorMsg = errorJson.error ? errorJson.error.message : responseText;
                 } catch (e) {
-                    errorMsg = responseText || errorMsg;
+                     errorMsg = responseText || errorMsg;
                 }
                 throw new Error(errorMsg);
             }
@@ -292,7 +301,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         } catch (error) {
             console.error("Fout bij het aanroepen van de Netlify Function:", error);
-            console.error("Ontvangen tekst die de fout veroorzaakte:", responseText);
+            // Gooi de error verder om in de hoofdlogica af te vangen
             throw error;
         }
     }
