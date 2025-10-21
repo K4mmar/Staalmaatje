@@ -24,7 +24,8 @@ exports.handler = async (event) => {
         return { statusCode: 400, body: JSON.stringify({ error: 'Prompt of query ontbreekt in de request body.' }) };
     }
 
-    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-25:generateContent?key=${apiKey}`;
+    // GECORRIGEERDE API URL
+    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
 
     // Stel de payload samen voor de Gemini API.
     const payload = {
@@ -76,10 +77,16 @@ exports.handler = async (event) => {
     const data = await response.json();
     
     // Stuur het antwoord van de Gemini API terug naar de browser (naar script.js).
+    // Let op: we sturen de 'text' direct terug, niet het hele object.
+    const responseText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+    if (!responseText) {
+        throw new Error("De AI gaf een leeg of ongeldig antwoord.");
+    }
+    
     return {
       statusCode: 200,
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data.candidates[0].content.parts[0].text),
+      body: JSON.stringify(responseText),
     };
 
   } catch (error) {
