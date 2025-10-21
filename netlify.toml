@@ -7,8 +7,7 @@
   publish = "/"
 
 # Configuratie voor de Netlify Functions
-# Dit vertelt Netlify waar de server-code staat en geeft het meer tijd.
+# Dit vertelt Netlify waar de server-code staat.
 [functions]
   directory = "netlify/functions"
-  timeout = 25
 
