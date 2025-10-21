@@ -159,7 +159,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const systemPrompt = `Je bent een behulpzame onderwijsassistent gespecialiseerd in de Nederlandse taal voor basisschoolkinderen. Je taak is het genereren van woorden voor een spellingwerkblad volgens de 'Staal' methode. Je krijgt een lijst met geselecteerde spellingcategorieën, inclusief hun naam en de specifieke regel. Genereer op basis van deze selectie 12 unieke Nederlandse woorden. Zorg ervoor dat de woorden passen bij de opgegeven categorie en regel. Voor elk woord, bedenk een korte, eenvoudige Nederlandse zin die geschikt is voor een kind. In de zin moet het woord voorkomen. Lever het resultaat alleen als een perfect gestructureerd JSON-object terug. Gebruik het volgende formaat: \`{ "woordenlijst": [ { "woord": "voorbeeldwoord", "zin": "Dit is een zin met het [voorbeeldwoord].", "categorie": ID }, ... ] }\`. Gebruik geen moeilijke of ongepaste woorden. De zinnen moeten natuurlijk en begrijpelijk zijn. Plaats het gegenereerde woord in de zin tussen vierkante haken [].`;
 
             const jsonResponseString = await callGeminiAPI(userQuery, systemPrompt);
-            const resultObject = JSON.parse(jsonResponseString); // Deze parse is nu de enige en dus correct!
+            const resultObject = JSON.parse(jsonResponseString);
             const worksheetWords = resultObject.woordenlijst;
 
             if (!worksheetWords || worksheetWords.length === 0) {
@@ -199,7 +199,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 throw new Error(errorMsg);
             }
-            // GECORRIGEERD: Geef de ruwe JSON-string terug, zonder te parsen.
             return responseText;
 
         } catch (error) {
@@ -210,39 +209,58 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function renderWorksheet(words, selectedCatIds) {
-        const selectedCatText = selectedCatIds.map(id => `${id}: ${categories[id]}`).join(', ');
         const groupDisplay = currentGroup === '7' ? '7/8' : currentGroup;
-
-        let studentSheetHTML = `
-            <h2 class="text-2xl font-bold mb-1">Spellingwerkblad Groep ${groupDisplay}</h2>
-            <p class="text-sm text-gray-500 mb-6">Categorieën: ${selectedCatText}</p>
-            <div style="display: grid; grid-template-columns: 20px 1fr 80px; align-items: end; row-gap: 20px;">
-                <span class="font-bold text-gray-500"></span>
-                <span class="font-bold text-gray-500 ml-2">Schrijf het woord op</span>
-                <span class="font-bold text-gray-500 text-center">Categorie</span>
+    
+        // AANPASSING: Werkblad header
+        const worksheetHeader = `
+            <div class="flex justify-between items-center border-b-2 pb-2 mb-6">
+                <h2 class="text-2xl font-bold">Spellingwerkblad Groep ${groupDisplay}</h2>
+                <div class="flex gap-4">
+                    <span>Naam: ............................................</span>
+                    <span>Datum: ...........................</span>
+                </div>
+            </div>
+        `;
+    
+        // AANPASSING: Duidelijkere layout met meer schrijfruimte en categorienaam
+        const studentSheetHTML = `
+            ${worksheetHeader}
+            <div style="display: grid; grid-template-columns: 20px 1fr auto; align-items: end; row-gap: 28px; font-size: 1.1rem;">
+                <span class="font-bold text-gray-500 text-sm"></span>
+                <span class="font-bold text-gray-500 text-sm ml-2">Schrijf het woord op</span>
+                <span class="font-bold text-gray-500 text-sm text-center">Categorie</span>
                 ${words.map((item, index) => `
-                   <div class="font-semibold">${index + 1}.</div>
+                   <div class="font-semibold pt-2">${index + 1}.</div>
                    <div class="flex items-center gap-3">
-                       <button onclick="speak('${item.zin.replace(/\[|\]/g, '')}')" class="no-print text-blue-500 hover:text-blue-700 text-xl"><i class="fas fa-volume-up"></i></button>
+                       <button onclick="speak('${item.zin.replace(/\[|\]/g, '')}')" class="no-print text-blue-500 hover:text-blue-700 text-xl -mb-1"><i class="fas fa-volume-up"></i></button>
                        <div class="w-full border-b-2 border-dotted border-gray-400 pb-1"></div>
                    </div>
-                   <div class="border-b-2 border-dotted border-gray-400 h-8 text-center">${item.categorie}</div>
+                   <div class="border-b-2 border-dotted border-gray-400 h-10 text-center font-semibold text-gray-700 pt-2 text-base">
+                        ${item.categorie}. ${categories[item.categorie] || ''}
+                   </div>
                 `).join('')}
+            </div>
+            <div class="mt-8 p-4 border-t-2">
+                <p class="font-semibold">✨ Extra opdracht:</p>
+                <p>Kies jouw drie lievelingswoorden van dit blad en schrijf met elk woord een nieuwe zin.</p>
+                <div class="border-b-2 border-dotted border-gray-400 mt-4 h-8"></div>
+                <div class="border-b-2 border-dotted border-gray-400 mt-4 h-8"></div>
+                <div class="border-b-2 border-dotted border-gray-400 mt-4 h-8"></div>
             </div>
         `;
         
-        let answerSheetHTML = `
+        const answerSheetHTML = `
             <h2 class="text-2xl font-bold mb-1">Antwoordenblad Groep ${groupDisplay}</h2>
-            <p class="text-sm text-gray-500 mb-6">Categorieën: ${selectedCatText}</p>
+            <p class="text-sm text-gray-500 mb-6">Categorieën: ${selectedCatIds.map(id => `${id}: ${categories[id]}`).join(', ')}</p>
             <table class="w-full">
                 <thead><tr class="border-b"><th class="text-left py-2">Nr.</th><th class="text-left py-2">Woord</th><th class="text-left py-2">Categorie</th><th class="text-left py-2">Zin</th></tr></thead>
                 <tbody>
                     ${words.map((item, index) => `
                         <tr class="border-b">
-                            <td class="py-2">${index + 1}.</td>
-                            <td class="py-2 font-semibold">${item.woord}</td>
-                            <td class="py-2">${item.categorie}</td>
-                            <td class="py-2 text-sm">${item.zin.replace(/\[|\]/g, '')}</td>
+                            <td class="py-2 align-top">${index + 1}.</td>
+                            <td class="py-2 align-top font-semibold">${item.woord}</td>
+                            <td class="py-2 align-top">${item.categorie}. ${categories[item.categorie] || ''}</td>
+                            <td class="py-2 align-top text-sm">${item.zin.replace(/\[|\]/g, '')}</td>
                         </tr>
                     `).join('')}
                 </tbody>
