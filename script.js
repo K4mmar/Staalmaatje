@@ -177,7 +177,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    async function callGeminiAPI(query, prompt) {
+    async function callGeminiAPI(userQuery, systemPrompt) {
         // De URL van onze eigen veilige Netlify Function
         const functionUrl = '/.netlify/functions/generate-words';
 
@@ -187,21 +187,20 @@ document.addEventListener('DOMContentLoaded', () => {
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ query, prompt }),
+                 // CORRECTIE: De 'keys' moeten overeenkomen met wat de Netlify Function verwacht ('query' en 'prompt')
+                body: JSON.stringify({ query: userQuery, prompt: systemPrompt }),
             });
 
             if (!response.ok) {
-                const errorResult = await response.json();
-                throw new Error(errorResult.error || 'Er is een onbekende fout opgetreden bij de server.');
+                const errorResult = await response.json().catch(() => response.text());
+                throw new Error(errorResult.error || errorResult || 'Er is een onbekende fout opgetreden bij de server.');
             }
 
-            // De Netlify function geeft de JSON-string van Gemini direct door
             const resultText = await response.text();
-            return resultText;
+            return JSON.parse(resultText);
 
         } catch (error) {
             console.error("Fout bij het aanroepen van de Netlify Function:", error);
-            // We gooien de error verder zodat de generateWorksheetWithAI functie het kan opvangen
             throw error;
         }
     }
@@ -284,11 +283,10 @@ document.addEventListener('DOMContentLoaded', () => {
             if (wordList.length === 0) throw new Error("Geen woorden om een verhaal te maken.");
             
             const groupDisplay = currentGroup === '7' ? '7 of 8' : currentGroup;
-            const userQuery = `Schrijf een heel kort, grappig en eenvoudig verhaaltje in het Nederlands voor een kind in groep ${groupDisplay}. Het verhaal moet de volgende woorden bevatten: ${wordList.join(', ')}. Maak de woorden uit de lijst dikgedrukt in de tekst door ze te omringen met **. Zorg ervoor dat het verhaal logisch en makkelijk te lezen is.`;
-            const systemPrompt = `Je bent een creatieve kinderboekenschrijver. Schrijf een kort, positief en grappig verhaal.`;
+            const userQueryForStory = `Schrijf een heel kort, grappig en eenvoudig verhaaltje in het Nederlands voor een kind in groep ${groupDisplay}. Het verhaal moet de volgende woorden bevatten: ${wordList.join(', ')}. Maak de woorden uit de lijst dikgedrukt in de tekst door ze te omringen met **. Zorg ervoor dat het verhaal logisch en makkelijk te lezen is.`;
+            const systemPromptForStory = `Je bent een creatieve kinderboekenschrijver. Schrijf een kort, positief en grappig verhaal.`;
             
-            // Ook de verhaal-functie gebruikt nu de veilige aanroep
-            const storyText = await callGeminiAPI(userQuery, systemPrompt);
+            const storyText = await callGeminiAPI(userQueryForStory, systemPromptForStory);
             if (!storyText) throw new Error("Kon geen verhaal genereren.");
             
             const formattedStory = storyText.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>');
@@ -323,6 +321,4 @@ document.addEventListener('DOMContentLoaded', () => {
         window.print();
     }
 });
-
-
 

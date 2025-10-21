@@ -24,7 +24,6 @@ exports.handler = async (event) => {
         return { statusCode: 400, body: JSON.stringify({ error: 'Prompt of query ontbreekt in de request body.' }) };
     }
 
-    // GECORRIGEERDE API URL
     const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
 
     // Stel de payload samen voor de Gemini API.
@@ -39,35 +38,20 @@ exports.handler = async (event) => {
         responseMimeType: "application/json",
         temperature: 0.7,
       },
-      // We passen de veiligheidsinstellingen aan om te voorkomen dat de AI te voorzichtig is.
       safetySettings: [
-        {
-          category: "HARM_CATEGORY_HARASSMENT",
-          threshold: "BLOCK_NONE"
-        },
-        {
-          category: "HARM_CATEGORY_HATE_SPEECH",
-          threshold: "BLOCK_NONE"
-        },
-        {
-          category: "HARM_CATEGORY_SEXUALLY_EXPLICIT",
-          threshold: "BLOCK_NONE"
-        },
-        {
-          category: "HARM_CATEGORY_DANGEROUS_CONTENT",
-          threshold: "BLOCK_NONE"
-        }
+        { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_NONE" },
+        { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_NONE" },
+        { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_NONE" },
+        { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_NONE" }
       ]
     };
 
-    // Roep de Gemini API aan met de payload.
     const response = await fetch(apiUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
     });
 
-    // Controleer of de API-aanroep succesvol was.
     if (!response.ok) {
       const errorBody = await response.text();
       console.error('Gemini API Error:', errorBody);
@@ -76,21 +60,19 @@ exports.handler = async (event) => {
 
     const data = await response.json();
     
-    // Stuur het antwoord van de Gemini API terug naar de browser (naar script.js).
-    // Let op: we sturen de 'text' direct terug, niet het hele object.
     const responseText = data.candidates?.[0]?.content?.parts?.[0]?.text;
     if (!responseText) {
         throw new Error("De AI gaf een leeg of ongeldig antwoord.");
     }
     
+    // CORRECTIE: We sturen de JSON-string direct terug, zonder hem opnieuw te stringify-en.
     return {
       statusCode: 200,
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(responseText),
+      body: responseText,
     };
 
   } catch (error) {
-    // Als er iets misgaat, log de fout en stuur een 500-error terug.
     console.error('Error in Netlify function:', error);
     return {
       statusCode: 500,
