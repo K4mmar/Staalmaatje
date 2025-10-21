@@ -158,8 +158,8 @@ document.addEventListener('DOMContentLoaded', () => {
             
             const systemPrompt = `Je bent een behulpzame onderwijsassistent gespecialiseerd in de Nederlandse taal voor basisschoolkinderen. Je taak is het genereren van woorden voor een spellingwerkblad volgens de 'Staal' methode. Je krijgt een lijst met geselecteerde spellingcategorieën, inclusief hun naam en de specifieke regel. Genereer op basis van deze selectie 12 unieke Nederlandse woorden. Zorg ervoor dat de woorden passen bij de opgegeven categorie en regel. Voor elk woord, bedenk een korte, eenvoudige Nederlandse zin die geschikt is voor een kind. In de zin moet het woord voorkomen. Lever het resultaat alleen als een perfect gestructureerd JSON-object terug. Gebruik het volgende formaat: \`{ "woordenlijst": [ { "woord": "voorbeeldwoord", "zin": "Dit is een zin met het [voorbeeldwoord].", "categorie": ID }, ... ] }\`. Gebruik geen moeilijke of ongepaste woorden. De zinnen moeten natuurlijk en begrijpelijk zijn. Plaats het gegenereerde woord in de zin tussen vierkante haken [].`;
 
-            const jsonResponse = await callGeminiAPI(userQuery, systemPrompt);
-            const resultObject = JSON.parse(jsonResponse);
+            const jsonResponseString = await callGeminiAPI(userQuery, systemPrompt);
+            const resultObject = JSON.parse(jsonResponseString); // Deze parse is nu de enige en dus correct!
             const worksheetWords = resultObject.woordenlijst;
 
             if (!worksheetWords || worksheetWords.length === 0) {
@@ -178,29 +178,33 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function callGeminiAPI(userQuery, systemPrompt) {
-        // De URL van onze eigen veilige Netlify Function
         const functionUrl = '/.netlify/functions/generate-words';
-
+        let responseText = ''; 
         try {
             const response = await fetch(functionUrl, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                 // CORRECTIE: De 'keys' moeten overeenkomen met wat de Netlify Function verwacht ('query' en 'prompt')
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ query: userQuery, prompt: systemPrompt }),
             });
 
-            if (!response.ok) {
-                const errorResult = await response.json().catch(() => response.text());
-                throw new Error(errorResult.error || errorResult || 'Er is een onbekende fout opgetreden bij de server.');
-            }
+            responseText = await response.text();
 
-            const resultText = await response.text();
-            return JSON.parse(resultText);
+            if (!response.ok) {
+                let errorMsg = `Serverfout (status ${response.status})`;
+                try {
+                    const errorJson = JSON.parse(responseText);
+                    errorMsg = errorJson.error || responseText;
+                } catch (e) {
+                    errorMsg = responseText || errorMsg;
+                }
+                throw new Error(errorMsg);
+            }
+            // GECORRIGEERD: Geef de ruwe JSON-string terug, zonder te parsen.
+            return responseText;
 
         } catch (error) {
             console.error("Fout bij het aanroepen van de Netlify Function:", error);
+            console.error("Ontvangen tekst die de fout veroorzaakte:", responseText);
             throw error;
         }
     }
