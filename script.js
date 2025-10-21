@@ -154,11 +154,11 @@ document.addEventListener('DOMContentLoaded', () => {
             const geselecteerdeRegels = spellingRegels.filter(regel => selectedCatIds.includes(regel.id));
             const groupDisplay = currentGroup === '7' ? '7 of 8' : currentGroup;
 
-            const userPrompt = `Genereer 12 unieke woorden voor een kind in groep ${groupDisplay} op basis van de volgende spellingcategorieën: ${JSON.stringify(geselecteerdeRegels, null, 2)}.`;
+            const userQuery = `Genereer 12 unieke woorden voor een kind in groep ${groupDisplay} op basis van de volgende spellingcategorieën: ${JSON.stringify(geselecteerdeRegels, null, 2)}.`;
             
             const systemPrompt = `Je bent een behulpzame onderwijsassistent gespecialiseerd in de Nederlandse taal voor basisschoolkinderen. Je taak is het genereren van woorden voor een spellingwerkblad volgens de 'Staal' methode. Je krijgt een lijst met geselecteerde spellingcategorieën, inclusief hun naam en de specifieke regel. Genereer op basis van deze selectie 12 unieke Nederlandse woorden. Zorg ervoor dat de woorden passen bij de opgegeven categorie en regel. Voor elk woord, bedenk een korte, eenvoudige Nederlandse zin die geschikt is voor een kind. In de zin moet het woord voorkomen. Lever het resultaat alleen als een perfect gestructureerd JSON-object terug. Gebruik het volgende formaat: \`{ "woordenlijst": [ { "woord": "voorbeeldwoord", "zin": "Dit is een zin met het [voorbeeldwoord].", "categorie": ID }, ... ] }\`. Gebruik geen moeilijke of ongepaste woorden. De zinnen moeten natuurlijk en begrijpelijk zijn. Plaats het gegenereerde woord in de zin tussen vierkante haken [].`;
 
-            const jsonResponse = await callGeminiAPI(userPrompt, systemPrompt);
+            const jsonResponse = await callGeminiAPI(userQuery, systemPrompt);
             const resultObject = JSON.parse(jsonResponse);
             const worksheetWords = resultObject.woordenlijst;
 
@@ -177,7 +177,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    async function callGeminiAPI(userPrompt, systemPrompt) {
+    async function callGeminiAPI(query, prompt) {
         // De URL van onze eigen veilige Netlify Function
         const functionUrl = '/.netlify/functions/generate-words';
 
@@ -187,7 +187,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ userPrompt, systemPrompt }),
+                body: JSON.stringify({ query, prompt }),
             });
 
             if (!response.ok) {
@@ -284,11 +284,11 @@ document.addEventListener('DOMContentLoaded', () => {
             if (wordList.length === 0) throw new Error("Geen woorden om een verhaal te maken.");
             
             const groupDisplay = currentGroup === '7' ? '7 of 8' : currentGroup;
-            const userPrompt = `Schrijf een heel kort, grappig en eenvoudig verhaaltje in het Nederlands voor een kind in groep ${groupDisplay}. Het verhaal moet de volgende woorden bevatten: ${wordList.join(', ')}. Maak de woorden uit de lijst dikgedrukt in de tekst door ze te omringen met **. Zorg ervoor dat het verhaal logisch en makkelijk te lezen is.`;
+            const userQuery = `Schrijf een heel kort, grappig en eenvoudig verhaaltje in het Nederlands voor een kind in groep ${groupDisplay}. Het verhaal moet de volgende woorden bevatten: ${wordList.join(', ')}. Maak de woorden uit de lijst dikgedrukt in de tekst door ze te omringen met **. Zorg ervoor dat het verhaal logisch en makkelijk te lezen is.`;
             const systemPrompt = `Je bent een creatieve kinderboekenschrijver. Schrijf een kort, positief en grappig verhaal.`;
             
             // Ook de verhaal-functie gebruikt nu de veilige aanroep
-            const storyText = await callGeminiAPI(userPrompt, systemPrompt);
+            const storyText = await callGeminiAPI(userQuery, systemPrompt);
             if (!storyText) throw new Error("Kon geen verhaal genereren.");
             
             const formattedStory = storyText.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>');
@@ -323,5 +323,6 @@ document.addEventListener('DOMContentLoaded', () => {
         window.print();
     }
 });
+
 
 
