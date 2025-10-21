@@ -324,20 +324,23 @@ document.addEventListener('DOMContentLoaded', () => {
         let studentSheetHTML = `
             ${worksheetHeader}
             ${wordListHeader}
-            <div class="space-y-8 text-lg"> <!-- Meer ruimte tussen blokken -->
+            <div class="space-y-8 text-lg">
         `;
 
         const renderExerciseBlock = (title, exercises, startIndex) => {
-            // --- AANGEPAST: Nummering uit de titel verwijderd ---
-            let blockHTML = `<div class="space-y-6"><h4 class="font-bold text-pink-600 border-b border-pink-200 pb-1">${title}</h4>`;
+            // --- AANGEPAST: Logica voor de schrijflijn ---
+            const schrijfLijn = '____________________'; // Gebruik streepjes
+            
+            let blockHTML = `<div class="space-y-8"><h4 class="font-bold text-pink-600 border-b border-pink-200 pb-1">${title}</h4>`;
             exercises.forEach((item, index) => {
                 const itemNumber = startIndex + index + 1;
-                let opdrachtHTML = `<p>${item.opdracht.replace(/(\S*\[doelwoord\]\S*)/, '...........').replace('[doelwoord]', '...........')}</p>`;
+                // Vervang zowel de placeholder als de oude stippellijn door de nieuwe schrijflijn
+                let opdrachtHTML = `<p>${item.opdracht.replace(/(\S*\[doelwoord\]\S*)/, schrijfLijn).replace('[doelwoord]', schrijfLijn).replace('...........', schrijfLijn)}</p>`;
                 
                 blockHTML += `
                     <div class="grid grid-cols-[25px_1fr_auto] items-start gap-x-3">
                         <span class="font-semibold">${itemNumber}.</span>
-                        <div>${opdrachtHTML.replace('...........', '<span class="font-semibold text-gray-700">...........</span>')}</div>
+                        <div>${opdrachtHTML.replace(schrijfLijn, `<span class="font-semibold text-gray-700">${schrijfLijn}</span>`)}</div>
                         <div class="text-xs text-gray-400 text-right font-mono">${item.categorie}. ${categories[item.categorie] || ''}</div>
                     </div>
                 `;
@@ -346,7 +349,6 @@ document.addEventListener('DOMContentLoaded', () => {
             return blockHTML;
         };
         
-        // --- AANGEPAST: Titels zonder nummering ---
         studentSheetHTML += renderExerciseBlock('Vul het juiste woord in', worksheetData.oefeningen.invulzinnen, 0);
         studentSheetHTML += renderExerciseBlock('Kies de juiste spelling', worksheetData.oefeningen.kies_juiste_spelling, 5);
         studentSheetHTML += renderExerciseBlock('Pas de spellingregel toe', worksheetData.oefeningen.regelvragen, 10);
