@@ -9,15 +9,6 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap');
         body { font-family: 'Poppins', sans-serif; }
-        @media print {
-            .no-print { display: none !important; }
-            .printable-area {
-                box-shadow: none !important;
-                border: none !important;
-            }
-            .page-break { page-break-before: always; }
-            body:not(.print-answers) #answer-sheet { display: none; }
-        }
     </style>
 </head>
 <body class="bg-pink-50">
@@ -38,12 +29,9 @@
                 </div>
 
                 <div id="category-selection" class="hidden">
-                    <h3 class="text-lg font-semibold mb-2 text-gray-700">2. Kies categorieën</h3>
+                    <h3 class="text-lg font-semibold mb-2 text-gray-700">2. Kies categorieën (max. 3)</h3>
                     <div id="category-list" class="max-h-48 overflow-y-auto bg-gray-50 p-3 rounded-lg border">
                         <!-- Categorie checkboxes worden hier door JS ingevoegd -->
-                    </div>
-                    <div class="mt-2">
-                        <button id="select-all-btn" class="text-sm text-blue-600 hover:underline">Selecteer/Deselecteer alles</button>
                     </div>
                 </div>
             </div>
@@ -60,8 +48,10 @@
         </div>
     </div>
 
-    <!-- Koppel het externe JavaScript-bestand -->
-    <script src="script.js"></script>
+    <!-- NIEUWE STRUCTUUR: Scripts in de juiste volgorde laden -->
+    <script src="data.js"></script>
+    <script src="ui-worksheet.js"></script>
+    <script src="main.js"></script>
 </body>
 </html>
 
