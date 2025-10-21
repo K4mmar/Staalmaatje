@@ -165,6 +165,36 @@ document.addEventListener('DOMContentLoaded', () => {
         await generateWorksheetWithAI(selectedCatIds);
     });
 
+    // --- NIEUW: Functie voor woordenboek-check ---
+    async function validateWords(wordList) {
+        const validationPromises = wordList.map(async (item) => {
+            const word = item.woord;
+            try {
+                const response = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/nl/${word}`);
+                if (!response.ok) {
+                    // Als de status 404 is, bestaat het woord niet.
+                    if (response.status === 404) {
+                        console.error(`Validatiefout: Het woord "${word}" bestaat niet.`);
+                        return { word, isValid: false };
+                    }
+                    // Andere fouten negeren we voor nu, om de app niet te blokkeren.
+                }
+                return { word, isValid: true };
+            } catch (error) {
+                console.warn(`Kon woord "${word}" niet valideren, we gaan uit van het goede.`, error);
+                return { word, isValid: true }; // Bij een netwerkfout, ga door.
+            }
+        });
+
+        const results = await Promise.all(validationPromises);
+        const invalidWords = results.filter(r => !r.isValid);
+
+        if (invalidWords.length > 0) {
+            // Gooi een fout als er spelfouten zijn gevonden.
+            throw new Error(`De AI heeft een spelfout gemaakt in: ${invalidWords.map(w => w.word).join(', ')}. Probeer het opnieuw.`);
+        }
+    }
+
     async function generateWorksheetWithAI(selectedCatIds) {
         const generateButton = document.getElementById('generate-btn');
         generateButton.disabled = true;
@@ -174,12 +204,12 @@ document.addEventListener('DOMContentLoaded', () => {
             const geselecteerdeRegels = spellingRegels.filter(regel => selectedCatIds.includes(regel.id));
             const groupDisplay = currentGroup === '7' ? '7 of 8' : currentGroup;
             
-            // --- VERNIEUWDE, KRACHTIGERE PROMPT ---
             const userQuery = `Genereer een spellingwerkblad voor groep ${groupDisplay} op basis van deze regels: ${JSON.stringify(geselecteerdeRegels, null, 2)}`;
+            // --- AANGESCHERPTE PROMPT ---
             const systemPrompt = `Je bent een ervaren en creatieve leerkracht voor het basisonderwijs in Nederland, expert in de 'Staal' spellingmethode. Je taak is het genereren van een compleet, printklaar en didactisch verantwoord spellingwerkblad.
 
 Je volgt deze stappen:
-1.  **Genereer 15 Woorden:** Maak eerst een lijst van 15 unieke, voor de groep geschikte woorden die passen bij de opgegeven spellingcategorieën.
+1.  **Genereer 15 Woorden:** Maak eerst een lijst van 15 unieke, voor de groep geschikte woorden die passen bij de opgegeven spellingcategorieën. **BELANGRIJK: Alle gegenereerde woorden moeten 100% correct gespeld zijn en voorkomen in het Nederlandse woordenboek.**
 2.  **Maak 3 Soorten Oefeningen:** Gebruik deze 15 woorden om 3 verschillende soorten oefeningen te maken. Elke oefeningsoort gebruikt 5 unieke woorden uit de lijst. Zorg dat elk woord precies één keer wordt gebruikt.
     - **Vorm 1: 'invulzinnen' (5 woorden):** Maak een zin en vervang het doelwoord door '...........'.
     - **Vorm 2: 'kies_juiste_spelling' (5 woorden):** Maak een opdracht waarbij de leerling moet kiezen tussen het correct gespelde woord en een veelvoorkomende, fonetische fout (bv. 'hond/hont', 'pauw/pau', 'geit/gijt').
@@ -194,6 +224,10 @@ Je volgt deze stappen:
                 throw new Error("De AI gaf een onvolledig antwoord.");
             }
             
+            // --- NIEUW: Validatiestap ---
+            generateButton.innerHTML = `<i class="fas fa-check-double mr-2"></i> Woorden worden gecontroleerd...`;
+            await validateWords(worksheetData.woordenlijst);
+
             currentWorksheetData = worksheetData;
             renderWorksheet(worksheetData, selectedCatIds);
 
@@ -266,21 +300,17 @@ Je volgt deze stappen:
             </div>
         `;
     
-        // --- VERNIEUWDE OPBOUW WERKBLAD ---
         let studentSheetHTML = `
             ${worksheetHeader}
             ${wordListHeader}
             <div class="space-y-6 text-lg">
         `;
 
-        // Functie om een set opdrachten te renderen
         const renderExerciseBlock = (title, exercises, startIndex) => {
             let blockHTML = `<div class="space-y-5"><h4 class="font-bold text-pink-600 border-b border-pink-200 pb-1">${title}</h4>`;
             exercises.forEach((item, index) => {
                 const itemNumber = startIndex + index + 1;
-                let opdrachtHTML = '';
-                // Genereer HTML op basis van het opdrachttype (dit kan nog specifieker)
-                opdrachtHTML = `<p>${item.opdracht.replace('...........', '<span class="font-semibold text-gray-700">...........</span>')}</p>`;
+                let opdrachtHTML = `<p>${item.opdracht.replace('...........', '<span class="font-semibold text-gray-700">...........</span>')}</p>`;
                 
                 blockHTML += `
                     <div class="grid grid-cols-[25px_1fr_auto] items-start gap-x-3">
@@ -298,9 +328,8 @@ Je volgt deze stappen:
         studentSheetHTML += renderExerciseBlock('Opdracht 6-10: Kies de juiste spelling', worksheetData.oefeningen.kies_juiste_spelling, 5);
         studentSheetHTML += renderExerciseBlock('Opdracht 11-15: Pas de spellingregel toe', worksheetData.oefeningen.regelvragen, 10);
         
-        studentSheetHTML += `</div>`; // Sluit de hoofd div af
+        studentSheetHTML += `</div>`;
 
-        // --- VERNIEUWD ANTWOORDENBLAD ---
         const allExercises = [
             ...worksheetData.oefeningen.invulzinnen,
             ...worksheetData.oefeningen.kies_juiste_spelling,
@@ -365,7 +394,6 @@ Je volgt deze stappen:
             const systemPrompt = `Je bent een creatieve kinderboekenschrijver. Schrijf een kort, positief en grappig verhaal.`;
             
             const jsonResponseString = await callGeminiAPI(userPrompt, systemPrompt);
-            // We verwachten nu een simpele string terug, geen complex JSON object.
             const storyText = JSON.parse(jsonResponseString).story || jsonResponseString; 
 
             if (!storyText) throw new Error("Kon geen verhaal genereren.");
