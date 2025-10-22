@@ -478,7 +478,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 e.preventDefault();
                 // Vervang alert/confirm door custom UI indien gewenst
                 if (window.confirm('Weet je zeker dat je dit opgeslagen werkblad wilt verwijderen?')) {
-                    deleteWorkspeedFromHistory(deleteBtn.dataset.deleteId);
+                    // --- FIX: Typfout in functienaam ---
+                    deleteWorksheetFromHistory(deleteBtn.dataset.deleteId);
                 }
             }
         });
@@ -522,7 +523,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const formattedStory = storyText.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>');
             const storyOutput = document.getElementById('story-output');
             storyOutput.innerHTML = `<p>${formattedStory}</p>`;
-        } catch (error)
+        // --- FIX: Ontbrekend haakje { toegevoegd ---
+        } catch (error) {
             console.error('Error generating story:', error);
             const storyOutput = document.getElementById('story-output');
             if (storyOutput) {
@@ -621,4 +623,3 @@ document.addEventListener('DOMContentLoaded', () => {
     // Start op de 'Nieuw' tab
     switchToTab('new');
 });
-
