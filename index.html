@@ -13,59 +13,69 @@
 </head>
 <body class="bg-slate-50">
 
-    <div id="app" class="container mx-auto px-4 py-8">
+    <div id="app" class="container mx-auto px-4 py-6">
         
-        <!-- Nieuwe Navigatie Header -->
+        <!-- Nieuwe Top Navigatie -->
         <nav class="bg-white shadow-sm rounded-xl mb-8">
             <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-                <div class="flex h-16 justify-between">
-                    <!-- Logo -->
-                    <div class="flex flex-shrink-0 items-center">
-                        <img class="h-10 w-auto" src="images/logo.png" alt="Staalmaatje Logo">
+                <div class="flex h-16 justify-between items-center">
+                    <!-- Gekleurde Titel -->
+                    <div class="flex-shrink-0">
+                        <span class="text-2xl font-bold" style="color: #2073af;">STAAL</span><span class="text-2xl font-bold" style="color: #a8c641;">maatje</span>
                     </div>
                     <!-- Hoofd Tabs -->
-                    <div class="sm:ml-6 sm:flex sm:space-x-8">
+                    <div class="flex space-x-6">
                         <a href="#" id="new-worksheet-tab" class="inline-flex items-center border-b-2 px-1 pt-1 text-sm font-semibold border-blue-600 text-blue-600" style="color: #2073af; border-color: #2073af;">
-                            Nieuw Werkblad
+                            Nieuw
                         </a>
                         <a href="#" id="history-tab" class="inline-flex items-center border-b-2 border-transparent px-1 pt-1 text-sm font-semibold text-slate-500 hover:border-slate-300 hover:text-slate-700">
-                            Opgeslagen Werkbladen
+                            Archief
                         </a>
                     </div>
                 </div>
             </div>
         </nav>
 
-        <!-- Titel Blok -->
-        <header class="text-center mb-8 max-w-4xl mx-auto">
-            <h1 class="text-3xl md:text-4xl font-bold text-slate-800">Maak je eigen spellingwerkblad</h1>
-            <p class="text-slate-600 mt-2">Kies een groep, selecteer categorieën en genereer een uniek werkblad.</p>
-        </header>
+        <!-- Inhoud (Nieuw vs Archief) -->
 
-        <!-- Tab Inhoud: Nieuw Werkblad (standaard zichtbaar) -->
+        <!-- Tab Inhoud: Nieuw Werkblad (2-koloms layout) -->
         <div id="new-worksheet-panel">
-            <div class="bg-white p-6 rounded-2xl shadow-lg mb-8 max-w-4xl mx-auto no-print">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                        <label class="block text-lg font-semibold mb-3 text-slate-700">1. Kies je groep</label>
-                        <div id="group-buttons" class="flex flex-wrap gap-2">
-                            <!-- Groep knoppen worden hier door JS ingevoegd -->
-                        </div>
-                    </div>
-
-                    <div id="category-selection" class="hidden">
-                        <h3 class="text-lg font-semibold mb-3 text-slate-700">2. Kies categorieën (max. 3)</h3>
-                        <div id="category-list" class="max-h-48 overflow-y-auto bg-slate-50 p-3 rounded-lg border border-slate-200">
-                            <!-- Categorie checkboxes worden hier door JS ingevoegd -->
-                        </div>
-                    </div>
-                </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-12 items-center max-w-6xl mx-auto">
                 
-                <div id="generate-button-container" class="text-center mt-8 hidden">
-                    <button id="generate-btn" class="text-white font-bold py-3 px-8 rounded-full text-lg transition-all transform hover:scale-105 shadow-lg" style="background-color: #f19127;">
-                        <i class="fas fa-magic mr-2"></i> Maak Werkblad
-                    </button>
+                <!-- Rechterkolom (Logo) - Wordt 1e op mobiel -->
+                <div class="order-1 md:order-2 text-center">
+                    <img class="h-64 w-auto mx-auto" src="images/logo.png" alt="Staalmaatje Logo">
+                    <h1 class="text-3xl md:text-4xl font-bold text-slate-800 mt-4">Welkom bij Staalmaatje</h1>
+                    <p class="text-slate-600 mt-2 text-lg">Stel hier je eigen spellingwerkblad samen.</p>
                 </div>
+
+                <!-- Linkerkolom (Menu) - Wordt 2e op mobiel -->
+                <div class="order-2 md:order-1">
+                    <div class="bg-white p-6 rounded-2xl shadow-lg no-print">
+                        <div class="space-y-6">
+                            <div>
+                                <label class="block text-lg font-semibold mb-3 text-slate-700">1. Kies je groep</label>
+                                <div id="group-buttons" class="flex flex-wrap gap-2">
+                                    <!-- Groep knoppen worden hier door JS ingevoegd -->
+                                </div>
+                            </div>
+        
+                            <div id="category-selection" class="hidden">
+                                <h3 class="text-lg font-semibold mb-3 text-slate-700">2. Kies categorieën (max. 3)</h3>
+                                <div id="category-list" class="max-h-48 overflow-y-auto bg-slate-50 p-3 rounded-lg border border-slate-200">
+                                    <!-- Categorie checkboxes worden hier door JS ingevoegd -->
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div id="generate-button-container" class="text-center mt-8 hidden">
+                            <button id="generate-btn" class="w-full text-white font-bold py-3 px-8 rounded-full text-lg transition-all transform hover:scale-105 shadow-lg" style="background-color: #f19127;">
+                                <i class="fas fa-magic mr-2"></i> Maak Werkblad
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
             </div>
         </div>
 
@@ -86,7 +96,7 @@
 
 
         <!-- Werkblad Output -->
-        <div id="worksheet-output">
+        <div id="worksheet-output" class="mt-12">
             <!-- Werkblad wordt hier door JS gegenereerd -->
         </div>
     </div>
