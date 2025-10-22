@@ -6,94 +6,83 @@
 let currentWorksheetData = {};
 let currentGroup = null;
 
+// Kleurenpalet
+const COLORS = {
+    blue: '#2073af',
+    orange: '#f19127',
+    green: '#a8c641',
+    slate: '#64748b' // (een grijstint voor tekst)
+};
+
 document.addEventListener('DOMContentLoaded', () => {
-    // Stijlen voor printen toevoegen
+    // Stijlen voor printen toevoegen (compacter)
     const style = document.createElement('style');
     style.innerHTML = `
         @media print {
-            @page { size: A4 portrait; margin: 1cm; } /* Kleinere paginamarges */
+            @page { size: A4 portrait; margin: 1cm; } /* Kleinere marges */
             #student-sheet, #answer-sheet { display: none; }
             body.print-student-sheet #student-sheet { display: block; }
             body.print-answer-sheet #answer-sheet { display: block; }
             .no-print { display: none !important; }
             .printable-area { box-shadow: none !important; border: none !important; }
-
-            /* --- NIEUW: Compacte opmaak --- */
-            body { font-size: 10pt; } /* Iets kleiner lettertype */
             
-            #student-sheet h2, #answer-sheet h2 {
-                font-size: 14pt;
-                margin-bottom: 0.5rem;
-            }
-            #student-sheet h3, #answer-sheet h3 {
-                font-size: 12pt;
-                margin-bottom: 0.3rem;
-                padding-bottom: 2px;
-            }
-
-            /* Verklein marges van de hoofdblokken */
-            #student-sheet .mb-8 { margin-bottom: 1rem; } /* Woordenlijst */
-            #student-sheet .space-y-6 { gap: 0.75rem; } /* Tussen oefenblokken */
-            #student-sheet .space-y-4 { gap: 0.5rem; } /* Tussen opdrachten */
-
-            /* Verklein padding van de woordenlijst */
-            #student-sheet .p-4 { padding: 0.5rem; }
-
-            /* Verklein padding en marges van de opdracht-items */
-            #student-sheet .p-3 { padding: 0.4rem; }
-            #student-sheet .mt-1 { margin-top: 0; }
-            #student-sheet .text-base { font-size: 9pt; line-height: 1.3; } /* AANGEPAST: lettertype verkleind */
-            
-            /* Maak de schrijflijn korter */
-            #student-sheet .mt-2.h-8 { 
-                margin-top: 0.25rem; 
-                height: 1rem; /* Lagere lijn */
-            }
-
-            /* Compacte tabel voor antwoordenblad */
-            #answer-sheet table { font-size: 9pt; }
-            #answer-sheet th, #answer-sheet td {
-                padding: 3px 6px;
-            }
-            #answer-sheet .mb-6 { margin-bottom: 0.5rem; }
-            #answer-sheet .mb-1 { margin-bottom: 0.1rem; }
-            
-            /* Verhaal compacter */
-            #story-container {
-                margin-top: 1rem;
-                font-size: 10pt;
-            }
-            #story-container h3 {
-                font-size: 12pt;
-            }
-            /* --- Einde compacte opmaak --- */
+            /* Compactere opmaak */
+            #student-sheet h2, #answer-sheet h2 { font-size: 14pt; margin-bottom: 0.5rem; }
+            #student-sheet h3 { font-size: 11pt; margin-bottom: 0.3rem; }
+            #student-sheet .text-base { font-size: 9pt; } /* Lettertype opdrachten kleiner */
+            #student-sheet .p-3 { padding: 0.4rem !important; }
+            #student-sheet .space-y-6 { gap: 1rem; } /* Kleinere ruimte tussen blokken */
+            #student-sheet .mb-8 { margin-bottom: 1rem !important; }
+            #student-sheet .text-sm { font-size: 9pt; }
         }
     `;
     document.head.appendChild(style);
 
-    // DOM-elementen ophalen
+    // --- DOM-elementen ophalen ---
     const groupButtonsContainer = document.getElementById('group-buttons');
     const categorySelection = document.getElementById('category-selection');
     const categoryList = document.getElementById('category-list');
     const generateBtnContainer = document.getElementById('generate-button-container');
     const generateBtn = document.getElementById('generate-btn');
-    
-    // NIEUW: Elementen voor geschiedenis
-    const historyContainer = document.getElementById('history-container');
-    const historyList = document.getElementById('history-list');
+    const historyListContainer = document.getElementById('history-list');
     const clearHistoryBtn = document.getElementById('clear-history-btn');
 
-    // NIEUW: Elementen voor hoofd-tabs
-    const newWorksheetPanel = document.getElementById('new-worksheet-panel');
+    // --- Tab-navigatie (Nieuw / Opgeslagen) ---
+    const newTab = document.getElementById('new-worksheet-tab');
+    const historyTab = document.getElementById('history-tab');
+    const newPanel = document.getElementById('new-worksheet-panel');
     const historyPanel = document.getElementById('history-panel');
-    const tabBtnNew = document.getElementById('tab-btn-new');
-    const tabBtnHistory = document.getElementById('tab-btn-history');
+
+    newTab.addEventListener('click', () => {
+        newTab.classList.add('border-blue-600', 'text-blue-600');
+        newTab.classList.remove('border-transparent', 'text-slate-500', 'hover:text-slate-700', 'hover:border-slate-300');
+        
+        historyTab.classList.add('border-transparent', 'text-slate-500', 'hover:text-slate-700', 'hover:border-slate-300');
+        historyTab.classList.remove('border-blue-600', 'text-blue-600');
+
+        newPanel.classList.remove('hidden');
+        historyPanel.classList.add('hidden');
+    });
+
+    historyTab.addEventListener('click', () => {
+        historyTab.classList.add('border-blue-600', 'text-blue-600');
+        historyTab.classList.remove('border-transparent', 'text-slate-500', 'hover:text-slate-700', 'hover:border-slate-300');
+
+        newTab.classList.add('border-transparent', 'text-slate-500', 'hover:text-slate-700', 'hover:border-slate-300');
+        newTab.classList.remove('border-blue-600', 'text-blue-600');
+        
+        newPanel.classList.add('hidden');
+        historyPanel.classList.remove('hidden');
+        
+        renderHistoryList(); // Laad de lijst als je op de tab klikt
+    });
 
     // Functie voor notificaties
     function showNotification(message, isError = false) {
         const notification = document.createElement('div');
         notification.textContent = message;
         notification.className = `fixed top-5 right-5 p-4 rounded-lg shadow-lg text-white transition-opacity duration-300 z-50 ${isError ? 'bg-red-500' : 'bg-blue-500'}`;
+        notification.style.backgroundColor = isError ? '#E53E3E' : COLORS.blue;
         document.body.appendChild(notification);
 
         setTimeout(() => {
@@ -108,7 +97,7 @@ document.addEventListener('DOMContentLoaded', () => {
     ['4', '5', '6', '7/8'].forEach(group => {
         const btn = document.createElement('button');
         btn.textContent = `Groep ${group}`;
-        btn.className = 'group-btn font-semibold py-2 px-4 rounded-lg transition-transform transform hover:scale-105 bg-gray-200 text-gray-700';
+        btn.className = 'group-btn font-semibold py-2 px-4 rounded-lg transition-all transform hover:scale-105 bg-slate-100 text-slate-700 hover:bg-slate-200';
         btn.dataset.group = group === '7/8' ? '7' : group;
         groupButtonsContainer.appendChild(btn);
     });
@@ -119,16 +108,18 @@ document.addEventListener('DOMContentLoaded', () => {
             currentGroup = e.target.dataset.group;
 
             document.querySelectorAll('.group-btn').forEach(btn => {
-                btn.classList.remove('bg-pink-600', 'text-white');
-                btn.classList.add('bg-gray-200', 'text-gray-700');
+                btn.classList.remove('bg-blue-600', 'text-white');
+                btn.classList.add('bg-slate-100', 'text-slate-700');
+                btn.style.backgroundColor = '';
+                btn.style.color = '';
             });
-            e.target.classList.add('bg-pink-600', 'text-white');
-            e.target.classList.remove('bg-gray-200', 'text-gray-700');
+            e.target.style.backgroundColor = COLORS.blue;
+            e.target.style.color = 'white';
+            e.target.classList.remove('bg-slate-100', 'text-slate-700');
 
             displayCategories(currentGroup);
             categorySelection.classList.remove('hidden');
             generateBtnContainer.classList.remove('hidden');
-            // renderHistoryList(); // VERWIJDERD: Geschiedenis staat nu in eigen tab
             document.getElementById('worksheet-output').innerHTML = '';
         }
     });
@@ -136,20 +127,18 @@ document.addEventListener('DOMContentLoaded', () => {
     // Categorieën weergeven op basis van groep
     function displayCategories(group) {
         categoryList.innerHTML = '';
-        // Gebruik de groupCategories uit data.js (ervan uitgaande dat die geladen is)
         const cats = typeof groupCategories !== 'undefined' ? groupCategories[group] : [];
         if (!cats) return;
         cats.forEach(catId => {
             const div = document.createElement('div');
             div.className = 'flex items-center';
             div.innerHTML = `
-                <input id="cat-${catId}" type="checkbox" data-cat-id="${catId}" class="h-4 w-4 rounded border-gray-300 text-pink-600 focus:ring-pink-500">
-                <label for="cat-${catId}" class="ml-3 block text-sm text-gray-700">${catId}. ${categories[catId] || 'Onbekend'}</label>
+                <input id="cat-${catId}" type="checkbox" data-cat-id="${catId}" class="h-4 w-4 rounded border-slate-300 focus:ring-blue-500" style="color: ${COLORS.blue};">
+                <label for="cat-${catId}" class="ml-3 block text-sm text-slate-700">${catId}. ${categories[catId] || 'Onbekend'}</label>
             `;
             categoryList.appendChild(div);
         });
     }
-
 
     // Maximaal 3 categorieën selecteren
     categoryList.addEventListener('change', (e) => {
@@ -178,7 +167,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const validationPromises = wordList.map(async (item) => {
             const word = item.woord;
             try {
-                // Gebruik Wiktionary API voor woordvalidatie
                 const response = await fetch(`https://nl.wiktionary.org/api/rest_v1/page/definition/${encodeURIComponent(word)}`);
                 if (!response.ok && response.status === 404) {
                     return { ...item, isValid: false };
@@ -208,49 +196,39 @@ document.addEventListener('DOMContentLoaded', () => {
         generateBtn.innerHTML = `<i class="fas fa-spinner fa-spin mr-2"></i> Woorden worden bedacht...`;
 
         try {
-            // Gebruik spellingRegels uit data.js
             const geselecteerdeRegels = typeof spellingRegels !== 'undefined'
                 ? spellingRegels.filter(regel => selectedCatIds.includes(regel.id))
                 : [];
             const groupDisplay = currentGroup === '7' ? '7 of 8' : currentGroup;
 
             const userQuery = `Genereer een spellingwerkblad voor groep ${groupDisplay} op basis van deze regels: ${JSON.stringify(geselecteerdeRegels, null, 2)}`;
-
-            // --- AANGEPAST: Placeholder veranderd naar '...' ---
+            
+            // Systeemprompt met niveau-specifieke zinnen
             const systemPrompt = `Je bent een ervaren en creatieve leerkracht voor het basisonderwijs in Nederland, expert in de 'Staal' spellingmethode. Je taak is het genereren van een compleet, printklaar en didactisch verantwoord spellingwerkblad.
 
-    **BELANGRIJKSTE REGEL:** De complexiteit van *alle* zinnen en opdrachten moet **strikt** aansluiten bij de opgegeven groep.
-    * **Groep 4:** Gebruik uitsluitend zeer eenvoudige, korte zinnen (onderwerp-werkwoord-voorwerp, max 8-10 woorden).
-    * **Groep 5/6:** Zinnen mogen iets langer zijn, maar de focus blijft op eenvoudige taal.
-    * **Groep 7/8:** Zinnen mogen complexer zijn, maar de focus ligt altijd op spelling, niet op leesbegrip.
+    **ALLERBELANGRIJKSTE REGEL:** Pas de complexiteit van de zinnen AAN OP DE GROEP:
+    - **Groep 4:** Zeer korte, simpele zinnen (max. 8-10 woorden). Gebruik alleen basiswoordenschat.
+    - **Groep 5/6:** Korte zinnen (max. 12 woorden). Eenvoudige zinsbouw.
+    - **Groep 7/8:** Zinnen mogen iets langer, maar de focus moet 100% op de spelling blijven, niet op begrijpend lezen.
 
     Je volgt deze stappen:
     1.  **Genereer 15 Woorden:** Maak eerst een lijst van 15 unieke, voor de groep geschikte woorden die passen bij de opgegeven spellingcategorieën. **BELANGRIJK: Alle gegenereerde woorden moeten 100% correct gespeld zijn en voorkomen in het Nederlandse woordenboek.**
     2.  **Maak 3 Soorten Oefeningen:** Gebruik deze 15 woorden om 3 verschillende soorten oefeningen te maken. Elke oefeningsoort gebruikt 5 unieke woorden uit de lijst. Zorg dat elk woord precies één keer wordt gebruikt.
 
-        - **Vorm 1: 'invulzinnen' (5 woorden):** Maak een **contextrijke zin** die **eenvoudig genoeg is voor de geselecteerde groep** en vervang het doelwoord door '...' (drie puntjes).
-          **BELANGRIJKE REGELS VOOR INVULZINNEN:**
-          1.  **Niveau-aanpassing (CRUCIAAL):** De zin *moet* makkelijk leesbaar zijn. Voor groep 4, houd zinnen extreem kort en simpel. De moeilijkheid zit in het *spellen* van het woord, niet in het *begrijpen* van de zin.
-          2.  **Plaatsing Placeholder:** De '...' hoeft **NIET** aan het einde te staan. Plaats het waar het grammaticaal en logisch zinvol is.
-          3.  **Engagement:** Maak de zinnen leuk (dieren, avontuur, school), maar *nooit* ten koste van de eenvoud.
-          4.  **Duidelijke Context:** De zin moet nog steeds voldoende context (minstens 2 woorden) bevatten zodat het kind het woord kan raden.
-          5.  **Geen Vage Zinnen:** VERBIED zinnen als 'Ik heb een ...', 'Het ... is mooi.', 'Ik zie een ...', of definities.
-          6.  **Voorbeeld Interessant (maar simpel):** 'De dappere ridder vecht tegen de ... met zijn zwaard.' (Voorbeeld voor groep 5/6)
-          7.  **Voorbeeld Middenin (simpel):** 'In de winter draag ik een warme ... en handschoenen.'
-          8.  **Slecht Voorbeeld:** 'Een ... is geel.' (Te saai, geen context).
+        - **Vorm 1: 'invulzinnen' (5 woorden):** Maak een **interessante, contextrijke zin** die past bij het leesniveau (zie hoofdregel) en vervang het doelwoord door '...'.
+          **REGELS VOOR INVULZINNEN:**
+          1.  **NIVEAU:** Volg de 'ALLERBELANGRIJKSTE REGEL' over zinscomplexiteit.
+          2.  **Plaatsing Placeholder:** De '...' hoeft NIET aan het einde te staan.
+          3.  **Engagement:** Maak de zinnen leuk (dieren, avontuur, school, spelletjes).
+          4.  **Geen Vage Zinnen:** VERBIED zinnen als 'Ik heb een ...', 'Het ... is mooi.', 'Ik zie een ...'.
 
-        - **Vorm 2: 'kies_juiste_spelling' (5 woorden):** Maak een opdracht waarbij de leerling moet kiezen tussen het correct gespelde woord en een veelvoorkomende, fonetische fout (bv. 'hond / hont', 'pauw / pau', 'geit / gijt'). Gebruik een ' / ' als scheidingsteken.
+        - **Vorm 2: 'kies_juiste_spelling' (5 woorden):** Maak een opdracht waarbij de leerling moet kiezen tussen het correct gespelde woord en een veelvoorkomende, fonetische fout (bv. 'hond / hont', 'pauw / pau'). Gebruik een ' / ' als scheidingsteken.
 
-        - **Vorm 3: 'regelvragen' (5 woorden):** Maak een concrete vraag die de leerling dwingt om de **specifieke spellingregel** (behorend bij de categorie) toe te passen om het doelwoord te vormen.
-          **BELANGRIJKE REGELS VOOR REGELVRAGEN:**
-          1.  **Directe Link:** De vraag moet *direct* de strategie van de spellingcategorie testen.
-          2.  **Focus op Toepassing:** De vraag moet de leerling leiden naar het *schrijven* van het doelwoord door de regel toe te passen.
-          3.  **Suggesties (niet verplicht):** Gebruik formats die passen bij de regel.
-              * Bij 'Langermaakwoord' (bv. hond): "Maak het langer: hond ⟶ ..." (om 'd' of 't' te testen).
-              * Bij 'Verkleinwoord' (bv. boom): "Maak het verkleinwoord: boom ⟶ ..."
-              * Bij 'Samenstelling' (bv. rugzak): "Voeg samen: rug + zak ⟶ ..."
-              * Bij 'Klankgroepenwoord' (bv. bakker): Vraag naar het meervoud, of een vraag die de klankgroep test.
-          4.  **Verbod:** Abstracte vragen over *betekenis* zijn STRIKT VERBODEN.
+        - **Vorm 3: 'regelvragen' (5 woorden):** Maak een concrete vraag die de **specifieke spellingstrategie** van de categorie test.
+          **REGELS VOOR REGELVRAGEN:**
+          1.  **DIDACTISCH:** De vraag moet de leerling dwingen de regel toe te passen.
+          2.  **VOORBEELDEN:** Als de categorie 'Langermaakwoord' is, MOET de vraag zijn "Maak het langer: [woord] ⟶". Als het 'Verkleinwoord' is, "Maak het verkleinwoord: [woord] ⟶". Als het 'Klankgroepenwoord' is, is 'Maak het meervoud' een goede vraag.
+          3.  **DOEL:** De vraag leidt de leerling naar het invullen van het doelwoord.
 
     3.  **Lever het resultaat** als een perfect gestructureerd JSON-object. Gebruik exact dit formaat:
         \`{ "woordenlijst": [ { "woord": "voorbeeld", "categorie": 10 }, ... ], "oefeningen": { "invulzinnen": [ { "opdracht": "...", "woord": "...", "categorie": ... } ], "kies_juiste_spelling": [ { "opdracht": "Kies: ... / ...", "woord": "...", "categorie": ... } ], "regelvragen": [ { "opdracht": "...", "woord": "...", "categorie": ... } ] } }\``;
@@ -295,22 +273,17 @@ document.addEventListener('DOMContentLoaded', () => {
                         ex.woord = correctedWord;
                         try {
                            const escapedOriginalWord = originalWord.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
-                           // Gebruik de global flag 'g' om alle voorkomens te vervangen
                            const regex = new RegExp(escapedOriginalWord.replace(/\.\.\./g, '\\.\\.\\.'), 'g');
                            ex.opdracht = ex.opdracht.replace(regex, correctedWord);
                         } catch (e) {
                             console.warn("Kon woord niet vervangen in opdracht:", originalWord, correctedWord, e);
                             ex.opdracht = ex.opdracht.replace(originalWord, correctedWord); // Fallback
                         }
-                         // Specifieke vervanging voor de placeholder zelf, mocht die in het 'woord' staan (onwaarschijnlijk maar safe)
                          ex.opdracht = ex.opdracht.replace('...........', '...');
-                         ex.opdracht = ex.opdracht.replace('...', '...'); // Zorg dat we altijd maar 3 puntjes hebben
+                         ex.opdracht = ex.opdracht.replace('...', '...'); 
                     }
-                     // Vervang ook de placeholder in correcte woorden
                      ex.opdracht = ex.opdracht.replace('...........', '...');
-
                 });
-                 // Laatste controle: zorg dat alle placeholders '...' zijn
                 Object.values(worksheetData.oefeningen).flat().forEach(ex => {
                    ex.opdracht = ex.opdracht.replace('...........', '...');
                 });
@@ -318,11 +291,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
             currentWorksheetData = worksheetData;
+            // Sla op in geschiedenis
+            saveWorksheetToHistory(worksheetData, selectedCatIds, currentGroup);
+
             if (typeof renderWorksheet === 'function') {
                 renderWorksheet(worksheetData, selectedCatIds, currentGroup);
-                // NIEUW: Sla op in geschiedenis
-                saveWorksheetToHistory(worksheetData, selectedCatIds, currentGroup);
-                // renderHistoryList(); // VERWIJDERD: Wordt nu in tab geladen
             } else {
                 console.error("renderWorksheet functie niet gevonden. Is ui-worksheet.js correct geladen?");
                  showNotification("Fout bij het weergeven van het werkblad.", true);
@@ -397,152 +370,112 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // --- NIEUWE FUNCTIES VOOR GESCHIEDENIS ---
 
-    // Haal geschiedenis op uit localStorage
+    // --- Geschiedenis Functies ---
+
     function getHistory() {
-        try {
-            const historyJson = localStorage.getItem('worksheetHistory');
-            return historyJson ? JSON.parse(historyJson) : [];
-        } catch (e) {
-            console.error("Kon geschiedenis niet parsen:", e);
-            return [];
-        }
+        return JSON.parse(localStorage.getItem('staalmaatjeHistory') || '[]');
     }
 
-    // Toon de geschiedenis in de UI
-    function renderHistoryList() {
-        const history = getHistory();
-        if (history.length === 0) {
-            // historyContainer.classList.add('hidden'); // Niet meer nodig, paneel is al verborgen
-            historyList.innerHTML = '<p class="text-gray-500 col-span-2">Je hebt nog geen werkbladen opgeslagen.</p>';
-            clearHistoryBtn.classList.add('hidden'); // Verberg 'wis' knop als er niks is
-            return;
-        }
-        
-        // historyContainer.classList.remove('hidden'); // Niet meer nodig
-        clearHistoryBtn.classList.remove('hidden');
-        historyList.innerHTML = history.map(entry => {
-            const title = `Groep ${entry.groupDisplay} - ${entry.categories.map(c => categories[c] || '...').join(', ')}`;
-            const date = new Date(entry.timestamp).toLocaleString('nl-NL', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
-            return `
-                <div class="flex justify-between items-center p-3 bg-gray-50 border border-gray-200 rounded-lg hover:bg-pink-50 hover:border-pink-300 transition group">
-                    <button data-history-id="${entry.id}" class="load-history-btn w-full text-left">
-                        <span class="font-semibold text-gray-800 block group-hover:text-pink-700">${title}</span>
-                        <span class="text-sm text-gray-500">${date}</span>
-                    </button>
-                    <button data-delete-id="${entry.id}" class="delete-history-item-btn flex-shrink-0 p-2 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-100 z-10 relative">
-                        <i class="fas fa-trash-alt"></i>
-                    </button>
-                </div>
-            `;
-        }).join('');
+    function saveHistory(history) {
+        localStorage.setItem('staalmaatjeHistory', JSON.stringify(history));
     }
 
-    // Sla een nieuw werkblad op
-    function saveWorksheetToHistory(worksheetData, selectedCatIds, currentGroup) {
+    function saveWorksheetToHistory(worksheetData, selectedCatIds, group) {
         let history = getHistory();
-        const groupDisplay = currentGroup === '7' ? '7/8' : currentGroup;
-
+        const groupDisplay = group === '7' ? '7/8' : group;
+        const catNames = selectedCatIds.map(id => categories[id] || 'Onbekend').join(', ');
+        
         const newEntry = {
-            id: `ws_${Date.now()}`,
-            timestamp: new Date().toISOString(),
-            group: currentGroup,
-            groupDisplay: groupDisplay,
-            categories: selectedCatIds,
-            data: worksheetData
+            id: new Date().toISOString(),
+            timestamp: new Date().toLocaleString('nl-NL'),
+            title: `Groep ${groupDisplay} - ${catNames}`,
+            data: worksheetData,
+            selectedCatIds: selectedCatIds,
+            group: group
         };
 
-        // Voeg vooraan toe en behoud max 10 items
+        // Voeg vooraan toe
         history.unshift(newEntry);
-        history = history.slice(0, 10);
-
-        localStorage.setItem('worksheetHistory', JSON.stringify(history));
+        
+        // Beperk tot 10 items
+        if (history.length > 10) {
+            history = history.slice(0, 10);
+        }
+        
+        saveHistory(history);
     }
 
-    // Laad een werkblad vanuit de geschiedenis
     function loadWorksheetFromHistory(id) {
         const history = getHistory();
-        const entry = history.find(e => e.id === id);
-
+        const entry = history.find(item => item.id === id);
         if (entry) {
             currentWorksheetData = entry.data;
             currentGroup = entry.group;
             if (typeof renderWorksheet === 'function') {
-                renderWorksheet(entry.data, entry.categories, entry.group);
-                // Scroll naar het geladen werkblad
-                document.getElementById('worksheet-output').scrollIntoView({ behavior: 'smooth' });
-                showNotification(`Werkblad van ${new Date(entry.timestamp).toLocaleDateString('nl-NL')} geladen.`);
+                renderWorksheet(entry.data, entry.selectedCatIds, entry.group);
+                // Spring terug naar de 'Nieuw Werkblad' tab om het resultaat te tonen
+                newTab.click();
+            } else {
+                showNotification("Fout bij het laden van het werkblad.", true);
             }
-        } else {
-            showNotification("Kon dit werkblad niet vinden in de geschiedenis.", true);
         }
     }
 
-    // NIEUW: Verwijder een specifiek werkblad uit de geschiedenis
     function deleteWorksheetFromHistory(id) {
         let history = getHistory();
-        const originalLength = history.length;
-        history = history.filter(entry => entry.id !== id);
-
-        if (history.length < originalLength) {
-            localStorage.setItem('worksheetHistory', JSON.stringify(history));
-            renderHistoryList(); // Refresh the list
-            showNotification("Werkblad verwijderd uit geschiedenis.");
-        }
+        history = history.filter(item => item.id !== id);
+        saveHistory(history);
+        renderHistoryList(); // Ververs de lijst
     }
 
-    // Wis de geschiedenis
+    function renderHistoryList() {
+        const history = getHistory();
+        historyListContainer.innerHTML = ''; // Maak leeg
+
+        if (history.length === 0) {
+            historyListContainer.innerHTML = `<p class="text-slate-500">Je hebt nog geen werkbladen opgeslagen.</p>`;
+            clearHistoryBtn.classList.add('hidden');
+            return;
+        }
+
+        clearHistoryBtn.classList.remove('hidden');
+
+        history.forEach(item => {
+            const div = document.createElement('div');
+            div.className = 'flex items-center justify-between p-4 bg-white border border-slate-200 rounded-lg shadow-sm';
+            div.innerHTML = `
+                <div class="flex-grow cursor-pointer worksheet-loader" data-id="${item.id}">
+                    <strong class="text-blue-600" style="color: ${COLORS.blue};">${item.title}</strong>
+                    <p class="text-sm text-slate-500">${item.timestamp}</p>
+                </div>
+                <button class="delete-item p-2 text-slate-400 hover:text-red-500" data-id="${item.id}" title="Verwijder dit werkblad">
+                    <i class="fas fa-trash-alt"></i>
+                </button>
+            `;
+            historyListContainer.appendChild(div);
+        });
+    }
+
+    // Event listener voor de geschiedenislijst (voor laden en verwijderen)
+    historyListContainer.addEventListener('click', (e) => {
+        const loader = e.target.closest('.worksheet-loader');
+        const deleter = e.target.closest('.delete-item');
+
+        if (loader) {
+            loadWorksheetFromHistory(loader.dataset.id);
+        } else if (deleter) {
+            deleteWorksheetFromHistory(deleter.dataset.id);
+        }
+    });
+
+    // Knop om hele geschiedenis te wissen
     clearHistoryBtn.addEventListener('click', () => {
-        localStorage.removeItem('worksheetHistory');
+        saveHistory([]);
         renderHistoryList();
-        showNotification("Geschiedenis is gewist.");
     });
 
-    // Event listener voor het klikken op een geschiedenis-item
-    historyList.addEventListener('click', (e) => {
-        const loadButton = e.target.closest('.load-history-btn');
-        const deleteButton = e.target.closest('.delete-history-item-btn');
-
-        if (deleteButton && deleteButton.dataset.deleteId) {
-            // Stop de event-bubbling zodat het werkblad niet ook geladen wordt
-            e.stopPropagation(); 
-            deleteWorksheetFromHistory(deleteButton.dataset.deleteId);
-        } else if (loadButton && loadButton.dataset.historyId) {
-            loadWorksheetFromHistory(loadButton.dataset.historyId);
-        }
-    });
-
-    // --- NIEUWE FUNCTIES VOOR HOOFD-TABS ---
-    function switchMainTab(targetPanelId) {
-        // Verberg alle panelen
-        newWorksheetPanel.classList.add('hidden');
-        historyPanel.classList.add('hidden');
-
-        // Reset tab knoppen
-        tabBtnNew.classList.remove('active');
-        tabBtnHistory.classList.remove('active');
-
-        // Toon het juiste paneel en activeer de knop
-        if (targetPanelId === 'new-worksheet-panel') {
-            newWorksheetPanel.classList.remove('hidden');
-            tabBtnNew.classList.add('active');
-        } else if (targetPanelId === 'history-panel') {
-            historyPanel.classList.remove('hidden');
-            tabBtnHistory.classList.add('active');
-            renderHistoryList(); // Laad de geschiedenis-items als we naar dit tabblad gaan
-        }
-    }
-
-    // Event listeners voor hoofd-tabs
-    tabBtnNew.addEventListener('click', () => switchMainTab('new-worksheet-panel'));
-    tabBtnHistory.addEventListener('click', () => switchMainTab('history-panel'));
-
-    // --- EINDE HOOFD-TAB FUNCTIES ---
-
-    // Laad de lijst bij het opstarten van de pagina
-    // renderHistoryList(); // VERWIJDERD: Wordt nu geladen als je op de tab klikt. Standaard is 'Nieuw' open.
-    // (We laten de history list leeg tot de tab wordt aangeklikt)
+    // --- Einde Geschiedenis Functies ---
 
 
     // Functies die globaal beschikbaar moeten zijn (voor knoppen in de HTML)
@@ -553,14 +486,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
         storyBtn.disabled = true;
         storyBtn.innerHTML = `<i class="fas fa-spinner fa-spin mr-2"></i> Verhaal wordt gemaakt...`;
-        storyContainer.innerHTML = `<h3 class="text-2xl font-bold mb-4">✨ Jouw unieke verhaal!</h3><div id="story-output" class="p-4 bg-purple-50 rounded-lg border border-purple-200 min-h-[100px]"><p>Een momentje, de woorden-elfjes zijn druk aan het schrijven...</p></div>`;
+        storyContainer.innerHTML = `<h3 class="text-2xl font-bold mb-4" style="color: ${COLORS.orange};">✨ Jouw unieke verhaal!</h3><div id="story-output" class="p-4 bg-orange-50 rounded-lg border border-orange-200 min-h-[100px]"><p>Een momentje, de woorden-elfjes zijn druk aan het schrijven...</p></div>`;
 
         try {
             const wordList = currentWorksheetData.woordenlijst.map(item => item.woord);
             if (wordList.length === 0) throw new Error("Geen woorden om een verhaal te maken.");
 
             const groupDisplay = currentGroup === '7' ? '7 of 8' : currentGroup;
-            const userPrompt = `Schrijf een heel kort, grappig en eenvoudig verhaaltje in het Nederlands voor een kind in groep ${groupDisplay}. Het verhaal moet de volgende woorden bevatten: ${wordList.join(', ')}. Maak de woorden uit de lijst dikgedrukt in de tekst door ze te omringen met **. Zorg dat het verhaal logisch en makkelijk te lezen is.`;
+            const userPrompt = `Schrijf een heel kort, grappig en eenvoudig verhaaltje in het Nederlands voor een kind in groep ${groupDisplay}. Het verhaal moet de volgende woorden bevatten: ${wordList.join(', ')}. Maak de woorden uit de lijst dikgedrukt in de tekst door ze te omringen met **. Zorg ervoor dat het verhaal logisch en makkelijk te lezen is.`;
             const systemPrompt = `Je bent een creatieve kinderboekenschrijver. Schrijf een kort, positief en grappig verhaal. Geef je antwoord als JSON object met een "story" key.`;
 
             const jsonResponseString = await callGeminiAPI(userPrompt, systemPrompt);
@@ -594,6 +527,13 @@ document.addEventListener('DOMContentLoaded', () => {
         document.body.classList.add('print-answer-sheet');
         window.print();
     }
-});
 
+    // Init
+    // Stel de standaardkleuren in voor knoppen die niet door JS worden gegenereerd
+    document.getElementById('generate-btn').style.backgroundColor = COLORS.orange;
+    document.getElementById('clear-history-btn').style.backgroundColor = COLORS.slate;
+    document.querySelector('.text-blue-600').style.color = COLORS.blue;
+    document.querySelector('.border-blue-600').style.borderColor = COLORS.blue;
+    
+});
 
