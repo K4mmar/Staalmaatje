@@ -11,6 +11,9 @@ window.renderWorksheet = function(worksheetData, selectedCatIds, currentGroup) {
         return;
     }
 
+    // Gebruik de globale 'categories' variabele (ervan uitgaande dat data.js geladen is)
+    const categoriesMap = typeof categories !== 'undefined' ? categories : {};
+
     const groupDisplay = currentGroup === '7' ? '7/8' : currentGroup;
 
     const wordListHeader = `
@@ -45,17 +48,18 @@ window.renderWorksheet = function(worksheetData, selectedCatIds, currentGroup) {
 
         exercises.forEach((item, index) => {
             const itemNumber = startIndex + index + 1;
-            // --- AANGEPAST: Toon altijd de volledige opdrachttekst ---
-            const opdrachtTekst = item.opdracht; // Gebruik de volledige tekst zoals de AI die geeft
+            // Toon altijd de volledige opdrachttekst zoals die van de AI komt
+            const opdrachtTekst = item.opdracht;
 
+            // --- GECORRIGEERD: Foutief commentaar verwijderd ---
             blockHTML += `
                 <div class="p-3 border border-gray-200 rounded-lg flex items-start gap-3 relative">
                     <span class="font-semibold text-gray-500">${itemNumber}.</span>
                     <div class="flex-grow">
-                        <p class="text-base">${opdrachtTekst}</p> {/* Toon de volledige opdracht */}
+                        <p class="text-base">${opdrachtTekst}</p> {/* Verwijderd commentaar hier */}
                         <div class="mt-2 h-8 border-b-2 border-gray-300"></div> {/* Aparte schrijflijn */}
                     </div>
-                    <span class="absolute top-2 right-2 text-xs text-gray-400 bg-gray-100 px-2 py-1 rounded-full">${categories[item.categorie] || ''}</span>
+                    <span class="absolute top-2 right-2 text-xs text-gray-400 bg-gray-100 px-2 py-1 rounded-full">${categoriesMap[item.categorie] || ''}</span>
                 </div>
             `;
         });
@@ -78,7 +82,7 @@ window.renderWorksheet = function(worksheetData, selectedCatIds, currentGroup) {
 
     const answerSheetHTML = `
         <h2 class="text-2xl font-bold mb-1">Antwoordenblad Groep ${groupDisplay}</h2>
-        <p class="text-sm text-gray-500 mb-6">Categorieën: ${selectedCatIds.map(id => `${id}: ${categories[id]}`).join(', ')}</p>
+        <p class="text-sm text-gray-500 mb-6">Categorieën: ${selectedCatIds.map(id => `${id}: ${categoriesMap[id]}`).join(', ')}</p>
         <table class="w-full">
             <thead><tr class="border-b"><th class="text-left py-2">Nr.</th><th class="text-left py-2">Woord</th><th class="text-left py-2">Categorie</th><th class="text-left py-2">Opdracht</th></tr></thead>
             <tbody>
@@ -86,7 +90,7 @@ window.renderWorksheet = function(worksheetData, selectedCatIds, currentGroup) {
                     <tr class="border-b">
                         <td class="py-2 align-top">${index + 1}.</td>
                         <td class="py-2 align-top font-semibold">${item.woord}</td>
-                        <td class="py-2 align-top">${item.categorie}. ${categories[item.categorie] || ''}</td>
+                        <td class="py-2 align-top">${item.categorie}. ${categoriesMap[item.categorie] || ''}</td>
                         <td class="py-2 align-top text-sm">${item.opdracht}</td>
                     </tr>
                 `).join('')}
@@ -114,5 +118,5 @@ window.renderWorksheet = function(worksheetData, selectedCatIds, currentGroup) {
             <div id="story-container" class="prose max-w-none mt-12 no-print"></div>
         </div>
     `;
-};
+}; // Einde van renderWorksheet functie
 
