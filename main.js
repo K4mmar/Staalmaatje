@@ -11,12 +11,62 @@ document.addEventListener('DOMContentLoaded', () => {
     const style = document.createElement('style');
     style.innerHTML = `
         @media print {
-            @page { size: A4 portrait; margin: 1.5cm; }
+            @page { size: A4 portrait; margin: 1cm; } /* Kleinere paginamarges */
             #student-sheet, #answer-sheet { display: none; }
             body.print-student-sheet #student-sheet { display: block; }
             body.print-answer-sheet #answer-sheet { display: block; }
             .no-print { display: none !important; }
             .printable-area { box-shadow: none !important; border: none !important; }
+
+            /* --- NIEUW: Compacte opmaak --- */
+            body { font-size: 10pt; } /* Iets kleiner lettertype */
+            
+            #student-sheet h2, #answer-sheet h2 {
+                font-size: 14pt;
+                margin-bottom: 0.5rem;
+            }
+            #student-sheet h3, #answer-sheet h3 {
+                font-size: 12pt;
+                margin-bottom: 0.3rem;
+                padding-bottom: 2px;
+            }
+
+            /* Verklein marges van de hoofdblokken */
+            #student-sheet .mb-8 { margin-bottom: 1rem; } /* Woordenlijst */
+            #student-sheet .space-y-6 { gap: 0.75rem; } /* Tussen oefenblokken */
+            #student-sheet .space-y-4 { gap: 0.5rem; } /* Tussen opdrachten */
+
+            /* Verklein padding van de woordenlijst */
+            #student-sheet .p-4 { padding: 0.5rem; }
+
+            /* Verklein padding en marges van de opdracht-items */
+            #student-sheet .p-3 { padding: 0.4rem; }
+            #student-sheet .mt-1 { margin-top: 0; }
+            #student-sheet .text-base { font-size: 10pt; line-height: 1.3; }
+            
+            /* Maak de schrijflijn korter */
+            #student-sheet .mt-2.h-8 { 
+                margin-top: 0.25rem; 
+                height: 1rem; /* Lagere lijn */
+            }
+
+            /* Compacte tabel voor antwoordenblad */
+            #answer-sheet table { font-size: 9pt; }
+            #answer-sheet th, #answer-sheet td {
+                padding: 3px 6px;
+            }
+            #answer-sheet .mb-6 { margin-bottom: 0.5rem; }
+            #answer-sheet .mb-1 { margin-bottom: 0.1rem; }
+            
+            /* Verhaal compacter */
+            #story-container {
+                margin-top: 1rem;
+                font-size: 10pt;
+            }
+            #story-container h3 {
+                font-size: 12pt;
+            }
+            /* --- Einde compacte opmaak --- */
         }
     `;
     document.head.appendChild(style);
@@ -383,5 +433,6 @@ document.addEventListener('DOMContentLoaded', () => {
         window.print();
     }
 });
+
 
 
