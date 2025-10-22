@@ -146,11 +146,14 @@ window.renderWorksheet = function(worksheetData, selectedCatIds, currentGroup) {
                     </button>
                 </div>
                 
-                <!-- Inhoud Werkblad -->
-                <div id="student-sheet" class="prose max-w-none">${studentSheetHTML}</div>
+                <!-- Inhoud Werkblad (INCLUSIEF verhaal) -->
+                <div id="student-sheet" class="prose max-w-none">
+                    ${studentSheetHTML}
                 
-                <!-- Verhaal container -->
-                <div id="story-container" class="prose max-w-none mt-12 no-print"></div>
+                    <!-- Verhaal container (nu BINNEN student-sheet en ZONDER no-print) -->
+                    <div id="story-container" class="prose max-w-none mt-12"></div>
+                </div>
+
             </div>
 
             <div id="tab-panel-answer" class="tab-panel hidden">
