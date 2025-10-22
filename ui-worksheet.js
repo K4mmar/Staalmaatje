@@ -57,7 +57,7 @@ window.renderWorksheet = function(worksheetData, selectedCatIds, currentGroup) {
                     <span class="font-semibold text-slate-500 mt-1">${itemNumber}.</span>
                     <div class="flex-grow">
                         <p class="text-base text-slate-800">${opdrachtTekst}</p>
-                        <div class="mt-2 h-8 border-b-2 border-slate-300"></div> {/* Aparte schrijflijn */}
+                        <div class="mt-2 h-8 border-b-2 border-slate-300"></div>
                     </div>
                     <span class="flex-shrink-0 text-xs text-slate-500 bg-slate-100 px-2 py-1 rounded-full mt-1">${categoriesMap[item.categorie] || ''}</span>
                 </div>
@@ -199,4 +199,5 @@ window.switchTab = function(tabName) {
         answerButtons.classList.add('flex');
     }
 }
+
 
