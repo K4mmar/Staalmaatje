@@ -27,7 +27,7 @@ window.renderWorksheet = function(worksheetData, selectedCatIds, currentGroup) {
 
     const worksheetHeader = `
         <div class="flex justify-between items-center border-b-2 border-slate-200 pb-2 mb-6">
-            <h2 class="text-2xl font-bold text-slate-800">Spellingwerkblad Groep ${groupDisplay}</h2>
+            <h2 class="text-2xl font-bold text-slate-800">Spellingwerkblad <br><span class="text-xl font-semibold">Groep ${groupDisplay}</span></h2>
             <div class="flex gap-4 text-sm text-slate-600">
                 <span>Naam: _________________________</span>
                 <span>Datum: _____________</span>
@@ -85,7 +85,7 @@ window.renderWorksheet = function(worksheetData, selectedCatIds, currentGroup) {
     ];
 
     const answerSheetHTML = `
-        <h2 class="text-2xl font-bold mb-1 text-slate-800">Antwoordenblad Groep ${groupDisplay}</h2>
+        <h2 class="text-2xl font-bold mb-1 text-slate-800">Antwoordenblad <br><span class="text-xl font-semibold">Groep ${groupDisplay}</span></h2>
         <p class="text-sm text-slate-500 mb-6">Categorieën: ${selectedCatIds.map(id => `${id}: ${categoriesMap[id]}`).join(', ')}</p>
         <table class="w-full">
             <thead><tr class="border-b border-slate-200"><th class="text-left py-2 text-slate-600">Nr.</th><th class="text-left py-2 text-slate-600">Woord</th><th class="text-left py-2 text-slate-600">Categorie</th><th class="text-left py-2 text-slate-600">Opdracht</th></tr></thead>
@@ -199,5 +199,6 @@ window.switchTab = function(tabName) {
         answerButtons.classList.add('flex');
     }
 }
+
 
 
