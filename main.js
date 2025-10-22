@@ -42,7 +42,7 @@ document.addEventListener('DOMContentLoaded', () => {
             /* Verklein padding en marges van de opdracht-items */
             #student-sheet .p-3 { padding: 0.4rem; }
             #student-sheet .mt-1 { margin-top: 0; }
-            #student-sheet .text-base { font-size: 10pt; line-height: 1.3; }
+            #student-sheet .text-base { font-size: 9pt; line-height: 1.3; } /* AANGEPAST: lettertype verkleind */
             
             /* Maak de schrijflijn korter */
             #student-sheet .mt-2.h-8 { 
@@ -433,6 +433,7 @@ document.addEventListener('DOMContentLoaded', () => {
         window.print();
     }
 });
+
 
 
 
