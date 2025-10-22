@@ -154,21 +154,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const userQuery = `Genereer een spellingwerkblad voor groep ${groupDisplay} op basis van deze regels: ${JSON.stringify(geselecteerdeRegels, null, 2)}`;
 
+            // --- AANGEPAST: Placeholder veranderd naar '...' ---
             const systemPrompt = `Je bent een ervaren en creatieve leerkracht voor het basisonderwijs in Nederland, expert in de 'Staal' spellingmethode. Je taak is het genereren van een compleet, printklaar en didactisch verantwoord spellingwerkblad.
 
     Je volgt deze stappen:
     1.  **Genereer 15 Woorden:** Maak eerst een lijst van 15 unieke, voor de groep geschikte woorden die passen bij de opgegeven spellingcategorieën. **BELANGRIJK: Alle gegenereerde woorden moeten 100% correct gespeld zijn en voorkomen in het Nederlandse woordenboek.**
     2.  **Maak 3 Soorten Oefeningen:** Gebruik deze 15 woorden om 3 verschillende soorten oefeningen te maken. Elke oefeningsoort gebruikt 5 unieke woorden uit de lijst. Zorg dat elk woord precies één keer wordt gebruikt.
 
-        - **Vorm 1: 'invulzinnen' (5 woorden):** Maak een **interessante, contextrijke zin** voor een basisschoolkind en vervang het doelwoord door '...........' (11 puntjes).
+        - **Vorm 1: 'invulzinnen' (5 woorden):** Maak een **interessante, contextrijke zin** voor een basisschoolkind en vervang het doelwoord door '...' (drie puntjes).
           **BELANGRIJKE REGELS VOOR INVULZINNEN:**
-          1.  **Plaatsing Placeholder:** De '...........' hoeft **NIET** aan het einde te staan. Plaats het waar het grammaticaal en logisch zinvol is.
+          1.  **Plaatsing Placeholder:** De '...' hoeft **NIET** aan het einde te staan. Plaats het waar het grammaticaal en logisch zinvol is.
           2.  **Engagement:** Maak de zinnen *leuker* dan simpele feiten. Gebruik thema's zoals dieren, avontuur, school, spelletjes, fantasie.
           3.  **Duidelijke Context:** De zin moet nog steeds voldoende context (minstens 2 woorden) bevatten zodat het kind het woord kan raden.
-          4.  **Geen Vage Zinnen:** VERBIED zinnen als 'Ik heb een ...........', 'Het ........... is mooi.', 'Ik zie een ...........', of definities.
-          5.  **Voorbeeld Interessant:** 'De dappere ridder vecht tegen de ........... met zijn zwaard.'
-          6.  **Voorbeeld Middenin:** 'In de winter draag ik een warme ........... en handschoenen.'
-          7.  **Slecht Voorbeeld:** 'Een ........... is geel.' (Te saai, geen context).
+          4.  **Geen Vage Zinnen:** VERBIED zinnen als 'Ik heb een ...', 'Het ... is mooi.', 'Ik zie een ...', of definities.
+          5.  **Voorbeeld Interessant:** 'De dappere ridder vecht tegen de ... met zijn zwaard.'
+          6.  **Voorbeeld Middenin:** 'In de winter draag ik een warme ... en handschoenen.'
+          7.  **Slecht Voorbeeld:** 'Een ... is geel.' (Te saai, geen context).
 
         - **Vorm 2: 'kies_juiste_spelling' (5 woorden):** Maak een opdracht waarbij de leerling moet kiezen tussen het correct gespelde woord en een veelvoorkomende, fonetische fout (bv. 'hond / hont', 'pauw / pau', 'geit / gijt'). Gebruik een ' / ' als scheidingsteken.
 
@@ -217,20 +218,29 @@ document.addEventListener('DOMContentLoaded', () => {
                         ex.woord = correctedWord;
                         try {
                            const escapedOriginalWord = originalWord.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
-                           const regex = new RegExp(escapedOriginalWord, 'gi');
+                           // Gebruik de global flag 'g' om alle voorkomens te vervangen
+                           const regex = new RegExp(escapedOriginalWord.replace(/\.\.\./g, '\\.\\.\\.'), 'g');
                            ex.opdracht = ex.opdracht.replace(regex, correctedWord);
                         } catch (e) {
                             console.warn("Kon woord niet vervangen in opdracht:", originalWord, correctedWord, e);
-                            ex.opdracht = ex.opdracht.replace(originalWord, correctedWord);
+                            ex.opdracht = ex.opdracht.replace(originalWord, correctedWord); // Fallback
                         }
+                         // Specifieke vervanging voor de placeholder zelf, mocht die in het 'woord' staan (onwaarschijnlijk maar safe)
+                         ex.opdracht = ex.opdracht.replace('...........', '...');
+                         ex.opdracht = ex.opdracht.replace('...', '...'); // Zorg dat we altijd maar 3 puntjes hebben
                     }
+                     // Vervang ook de placeholder in correcte woorden
+                     ex.opdracht = ex.opdracht.replace('...........', '...');
+
+                });
+                 // Laatste controle: zorg dat alle placeholders '...' zijn
+                Object.values(worksheetData.oefeningen).flat().forEach(ex => {
+                   ex.opdracht = ex.opdracht.replace('...........', '...');
                 });
             }
 
 
             currentWorksheetData = worksheetData;
-            // Roep de render functie aan die nu in ui-worksheet.js staat
-            // Controleer of de functie bestaat voordat je hem aanroept
             if (typeof renderWorksheet === 'function') {
                 renderWorksheet(worksheetData, selectedCatIds, currentGroup);
             } else {
@@ -241,14 +251,14 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (error) {
             console.error("Fout bij genereren van AI werkblad:", error);
             let userMessage = `Oeps, er ging iets mis: ${error.message}`;
-            if (error.message.includes("429") || error.message.includes("quota")) {
+             if (error.message.includes("429") || error.message.includes("quota")) {
                 userMessage = "De AI-limiet voor de gratis versie is bereikt. Probeer het over een minuutje opnieuw.";
             } else if (error.message.includes("503")) {
                 userMessage = "De AI-service is momenteel overbelast. Probeer het later opnieuw.";
             } else if (error.message.includes("onvolledig") || error.message.includes("incorrect geformatteerd") || error.message.includes("niet-JSON")) {
                  userMessage = "De AI gaf een onverwacht antwoord. Probeer het nog eens.";
             } else if (error.message.includes("veiligheidsfilter")) {
-                userMessage = error.message; // Geef specifieke melding door
+                userMessage = error.message;
             }
             showNotification(userMessage, true);
         } finally {
@@ -346,9 +356,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // --- AANGEPAST: Deze functies horen nu bij ui-worksheet.js, maar moeten globaal zijn ---
-    // Zorg ervoor dat ui-worksheet.js deze functies definieert en aan window koppelt,
-    // of zet ze hier en zorg dat ui-worksheet.js ze niet opnieuw definieert.
     window.printStudentWorksheet = function() {
         document.body.classList.remove('print-answer-sheet');
         document.body.classList.add('print-student-sheet');

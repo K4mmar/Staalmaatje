@@ -1,11 +1,17 @@
 // ===================================================================================
-// UI - WERKBLAD RENDER FUNCTIE
-// Deze functie is puur verantwoordelijk voor het omzetten van de data naar HTML.
+// UI-WORKSHEET.JS - De 'vormgever' van het werkblad
+// Deze functie is verantwoordelijk voor het omzetten van de data naar HTML.
 // ===================================================================================
 
-function renderWorksheet(worksheetData, selectedCatIds, group) {
+// Functie om het werkblad te renderen (maak hem globaal beschikbaar)
+window.renderWorksheet = function(worksheetData, selectedCatIds, currentGroup) {
     const worksheetOutput = document.getElementById('worksheet-output');
-    const groupDisplay = group === '7' ? '7/8' : group;
+    if (!worksheetOutput) {
+        console.error("Element #worksheet-output niet gevonden.");
+        return;
+    }
+
+    const groupDisplay = currentGroup === '7' ? '7/8' : currentGroup;
 
     const wordListHeader = `
         <div class="mb-8 p-4 border rounded-lg bg-gray-50">
@@ -33,28 +39,21 @@ function renderWorksheet(worksheetData, selectedCatIds, group) {
     `;
 
     const renderExerciseBlock = (title, exercises, startIndex) => {
-        let blockHTML = `<div class="space-y-2"><h3 class="font-bold text-pink-600 border-b border-pink-200 pb-1 mb-3 text-xl">${title}</h3>`;
-        
+        let blockHTML = `<div class="space-y-4"><h3 class="font-bold text-pink-600 border-b border-pink-200 pb-1 mb-4 text-xl">${title}</h3>`;
+
         blockHTML += '<div class="grid grid-cols-1 gap-4">';
 
         exercises.forEach((item, index) => {
             const itemNumber = startIndex + index + 1;
-            let opdrachtTekst = '';
-            
-            if (item.opdracht.includes('...........')) {
-                opdrachtTekst = item.opdracht.split('...........')[0];
-            } else if (item.opdracht.includes('⟶')) {
-                opdrachtTekst = item.opdracht.split('⟶')[0].trim();
-            } else {
-                opdrachtTekst = item.opdracht;
-            }
+            // --- AANGEPAST: Toon altijd de volledige opdrachttekst ---
+            const opdrachtTekst = item.opdracht; // Gebruik de volledige tekst zoals de AI die geeft
 
             blockHTML += `
                 <div class="p-3 border border-gray-200 rounded-lg flex items-start gap-3 relative">
                     <span class="font-semibold text-gray-500">${itemNumber}.</span>
                     <div class="flex-grow">
-                        <p class="text-base">${opdrachtTekst}</p>
-                        <div class="mt-2 h-8 border-b-2 border-gray-300"></div>
+                        <p class="text-base">${opdrachtTekst}</p> {/* Toon de volledige opdracht */}
+                        <div class="mt-2 h-8 border-b-2 border-gray-300"></div> {/* Aparte schrijflijn */}
                     </div>
                     <span class="absolute top-2 right-2 text-xs text-gray-400 bg-gray-100 px-2 py-1 rounded-full">${categories[item.categorie] || ''}</span>
                 </div>
@@ -64,11 +63,11 @@ function renderWorksheet(worksheetData, selectedCatIds, group) {
         blockHTML += `</div></div>`;
         return blockHTML;
     };
-    
+
     studentSheetHTML += renderExerciseBlock('Vul het juiste woord in', worksheetData.oefeningen.invulzinnen, 0);
     studentSheetHTML += renderExerciseBlock('Kies de juiste spelling', worksheetData.oefeningen.kies_juiste_spelling, 5);
     studentSheetHTML += renderExerciseBlock('Pas de spellingregel toe', worksheetData.oefeningen.regelvragen, 10);
-    
+
     studentSheetHTML += `</div>`;
 
     const allExercises = [
@@ -94,7 +93,7 @@ function renderWorksheet(worksheetData, selectedCatIds, group) {
             </tbody>
         </table>
     `;
-    
+
     worksheetOutput.innerHTML = `
         <div class="printable-area bg-white p-6 md:p-10 rounded-2xl shadow-lg max-w-4xl mx-auto">
             <div class="no-print mb-6 flex justify-end items-center gap-4">
@@ -108,11 +107,12 @@ function renderWorksheet(worksheetData, selectedCatIds, group) {
                     ✨ Maak een Verhaal
                 </button>
             </div>
-            
+
             <div id="student-sheet" class="prose max-w-none">${studentSheetHTML}</div>
             <div id="answer-sheet" class="prose max-w-none page-break mt-12">${answerSheetHTML}</div>
 
             <div id="story-container" class="prose max-w-none mt-12 no-print"></div>
         </div>
     `;
-}
+};
+
