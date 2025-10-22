@@ -266,7 +266,7 @@ document.addEventListener('DOMContentLoaded', () => {
             let invalidWords = await validateWords(worksheetData.woordenlijst);
 
             if (invalidWords.length > 0) {
-                generateBtn.innerHTML = `<i class="fas fa-wand-magic-sparkles mr-2"></i> Foutjes worden hersteld...`;
+                generateBtn.innerHTML = `<i class="fas fa-wand-magic-sparkles mr-2"></i> Magie wordt toegevoegd...`;
 
                 const invalidWordsInfo = invalidWords.map(item => ({ original: item.woord, categorie: categories[item.categorie] }));
                 const correctionQuery = `Je hebt eerder de volgende woorden gegenereerd die spelfouten bevatten: ${JSON.stringify(invalidWordsInfo)}. Geef de correcte spelling voor elk van deze woorden.`;
