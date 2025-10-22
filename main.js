@@ -173,7 +173,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
         - **Vorm 2: 'kies_juiste_spelling' (5 woorden):** Maak een opdracht waarbij de leerling moet kiezen tussen het correct gespelde woord en een veelvoorkomende, fonetische fout (bv. 'hond / hont', 'pauw / pau', 'geit / gijt'). Gebruik een ' / ' als scheidingsteken.
 
-        - **Vorm 3: 'regelvragen' (5 woorden):** Maak een concrete vraag die de spellingstrategie test. **BELANGRIJK: De vraag MOET één van deze formats gebruiken:** "Maak het meervoud: [enkelvoudsvorm] ⟶", "Maak het langer: [verkorte vorm] ⟶", "Maak het verkleinwoord: [grondwoord] ⟶", of "Voeg samen: [deel 1] + [deel 2] ⟶". De vraag moet de leerling leiden naar het invullen van het doelwoord. Abstracte vragen over betekenis zijn STRIKT VERBODEN.
+        - **Vorm 3: 'regelvragen' (5 woorden):** Maak een concrete vraag die de leerling dwingt om de **specifieke spellingregel** (behorend bij de categorie) toe te passen om het doelwoord te vormen.
+          **BELANGRIJKE REGELS VOOR REGELVRAGEN:**
+          1.  **Directe Link:** De vraag moet *direct* de strategie van de spellingcategorie testen.
+          2.  **Focus op Toepassing:** De vraag moet de leerling leiden naar het *schrijven* van het doelwoord door de regel toe te passen.
+          3.  **Suggesties (niet verplicht):** Gebruik formats die passen bij de regel.
+              * Bij 'Langermaakwoord' (bv. hond): "Maak het langer: hond ⟶ ..." (om 'd' of 't' te testen).
+              * Bij 'Verkleinwoord' (bv. boom): "Maak het verkleinwoord: boom ⟶ ..."
+              * Bij 'Samenstelling' (bv. rugzak): "Voeg samen: rug + zak ⟶ ..."
+              * Bij 'Klankgroepenwoord' (bv. bakker): Vraag naar het meervoud, of een vraag die de klankgroep test.
+          4.  **Verbod:** Abstracte vragen over *betekenis* zijn STRIKT VERBODEN.
 
     3.  **Lever het resultaat** als een perfect gestructureerd JSON-object. Gebruik exact dit formaat:
         \`{ "woordenlijst": [ { "woord": "voorbeeld", "categorie": 10 }, ... ], "oefeningen": { "invulzinnen": [ { "opdracht": "...", "woord": "...", "categorie": ... } ], "kies_juiste_spelling": [ { "opdracht": "Kies: ... / ...", "woord": "...", "categorie": ... } ], "regelvragen": [ { "opdracht": "...", "woord": "...", "categorie": ... } ] } }\``;
