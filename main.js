@@ -241,7 +241,10 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             generateBtn.innerHTML = `<i class="fas fa-spell-check mr-2"></i> Woorden worden gecontroleerd...`;
-            let invalidWords = await validateWords(worksheetData.woordenlijst);
+            // ==========================================================
+            // DEZE REGEL VEROORZAAKTE DE FOUT. NU IS DE FUNCTIE ERONDER GEDEFINIEERD.
+            // ==========================================================
+            let invalidWords = await validateWords(worksheetData.woordenlijst); 
 
             if (invalidWords.length > 0) {
                 generateBtn.innerHTML = `<i class="fas fa-wand-magic-sparkles mr-2"></i> Magie wordt toegevoegd...`; // Positief bericht
@@ -322,6 +325,49 @@ document.addEventListener('DOMContentLoaded', () => {
             generateBtn.disabled = false;
             generateBtn.innerHTML = `<i class="fas fa-magic mr-2"></i> Maak Werkblad`;
         }
+    }
+
+    // ===================================================================================
+    // WOORDEN VALIDATIE FUNCTIE (NIEUW TOEGEVOEGD)
+    // ===================================================================================
+
+    /**
+     * Valideert een lijst van woorden via een externe woordenboek-API.
+     * @param {Array<Object>} wordList - Een array van {woord: "...", categorie: ...} objecten.
+     * @returns {Promise<Array<Object>>} - Een promise die reslveert naar een array van de *niet-gevonden* woord objecten.
+     */
+    async function validateWords(wordList) {
+        const invalidWords = [];
+        
+        // Maak een array van promises, zodat we woorden parallel kunnen controleren
+        const validationPromises = wordList.map(async (item) => {
+            try {
+                // We gebruiken encodeURIComponent voor het geval er speciale tekens in het woord zitten
+                const response = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/nl/${encodeURIComponent(item.woord)}`);
+                
+                // De API geeft een { "title": "No Definitions Found" } object terug als het woord niet bestaat.
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    if (errorData && errorData.title === "No Definitions Found") {
+                        invalidWords.push(item); // Woord niet gevonden, dus "ongeldig"
+                    } else {
+                        // Andere fout (bv. 500 server error bij de API), log het maar markeer niet als ongeldig
+                        console.warn(`API-fout bij valideren '${item.woord}': ${response.status}`);
+                    }
+                }
+                // Als response.ok true is (status 200), is het woord gevonden en dus geldig.
+                
+            } catch (error) {
+                // Als de API-call zelf mislukt (bv. netwerkfout), loggen we dit
+                // We gaan er dan vanuit dat het woord geldig is, om de app niet te breken.
+                console.warn(`Kon validatie-check niet uitvoeren voor '${item.woord}':`, error);
+            }
+        });
+
+        // Wacht tot alle validatie-checks klaar zijn
+        await Promise.all(validationPromises);
+        
+        return invalidWords;
     }
 
     // Functie voor API-aanroep
@@ -612,6 +658,8 @@ document.addEventListener('DOMContentLoaded', () => {
             switchToTab('archive');
         });
     }
+
+
 
     // --- INIT ---
     loadHistory();
