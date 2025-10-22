@@ -43,6 +43,19 @@
             </div>
         </div>
 
+        <!-- NIEUW: Geschiedenis Sectie -->
+        <div id="history-container" class="max-w-4xl mx-auto mt-10 mb-8 no-print hidden">
+            <div class="flex justify-between items-center mb-3">
+                <h3 class="text-lg font-semibold text-gray-700">Recent opgeslagen werkbladen</h3>
+                <button id="clear-history-btn" class="text-sm text-gray-500 hover:text-red-500 underline">
+                    <i class="fas fa-trash-alt mr-1"></i> Wis geschiedenis
+                </button>
+            </div>
+            <div id="history-list" class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <!-- Geschiedenis-items worden hier door JS ingevoegd -->
+            </div>
+        </div>
+
         <div id="worksheet-output">
             <!-- Werkblad wordt hier door JS gegenereerd -->
         </div>

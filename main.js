@@ -77,6 +77,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const categoryList = document.getElementById('category-list');
     const generateBtnContainer = document.getElementById('generate-button-container');
     const generateBtn = document.getElementById('generate-btn');
+    
+    // NIEUW: Elementen voor geschiedenis
+    const historyContainer = document.getElementById('history-container');
+    const historyList = document.getElementById('history-list');
+    const clearHistoryBtn = document.getElementById('clear-history-btn');
 
     // Functie voor notificaties
     function showNotification(message, isError = false) {
@@ -117,6 +122,7 @@ document.addEventListener('DOMContentLoaded', () => {
             displayCategories(currentGroup);
             categorySelection.classList.remove('hidden');
             generateBtnContainer.classList.remove('hidden');
+            renderHistoryList(); // Toon geschiedenis bij selecteren groep
             document.getElementById('worksheet-output').innerHTML = '';
         }
     });
@@ -308,6 +314,9 @@ document.addEventListener('DOMContentLoaded', () => {
             currentWorksheetData = worksheetData;
             if (typeof renderWorksheet === 'function') {
                 renderWorksheet(worksheetData, selectedCatIds, currentGroup);
+                // NIEUW: Sla op in geschiedenis
+                saveWorksheetToHistory(worksheetData, selectedCatIds, currentGroup);
+                renderHistoryList(); // Update de lijst
             } else {
                 console.error("renderWorksheet functie niet gevonden. Is ui-worksheet.js correct geladen?");
                  showNotification("Fout bij het weergeven van het werkblad.", true);
@@ -382,6 +391,100 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    // --- NIEUWE FUNCTIES VOOR GESCHIEDENIS ---
+
+    // Haal geschiedenis op uit localStorage
+    function getHistory() {
+        try {
+            const historyJson = localStorage.getItem('worksheetHistory');
+            return historyJson ? JSON.parse(historyJson) : [];
+        } catch (e) {
+            console.error("Kon geschiedenis niet parsen:", e);
+            return [];
+        }
+    }
+
+    // Toon de geschiedenis in de UI
+    function renderHistoryList() {
+        const history = getHistory();
+        if (history.length === 0) {
+            historyContainer.classList.add('hidden');
+            return;
+        }
+        
+        historyContainer.classList.remove('hidden');
+        historyList.innerHTML = history.map(entry => {
+            const title = `Groep ${entry.groupDisplay} - ${entry.categories.map(c => categories[c] || '...').join(', ')}`;
+            const date = new Date(entry.timestamp).toLocaleString('nl-NL', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+            return `
+                <button data-history-id="${entry.id}" class="load-history-btn w-full text-left p-3 bg-gray-50 border border-gray-200 rounded-lg hover:bg-pink-50 hover:border-pink-300 transition">
+                    <span class="font-semibold text-gray-800 block">${title}</span>
+                    <span class="text-sm text-gray-500">${date}</span>
+                </button>
+            `;
+        }).join('');
+    }
+
+    // Sla een nieuw werkblad op
+    function saveWorksheetToHistory(worksheetData, selectedCatIds, currentGroup) {
+        let history = getHistory();
+        const groupDisplay = currentGroup === '7' ? '7/8' : currentGroup;
+
+        const newEntry = {
+            id: `ws_${Date.now()}`,
+            timestamp: new Date().toISOString(),
+            group: currentGroup,
+            groupDisplay: groupDisplay,
+            categories: selectedCatIds,
+            data: worksheetData
+        };
+
+        // Voeg vooraan toe en behoud max 10 items
+        history.unshift(newEntry);
+        history = history.slice(0, 10);
+
+        localStorage.setItem('worksheetHistory', JSON.stringify(history));
+    }
+
+    // Laad een werkblad vanuit de geschiedenis
+    function loadWorksheetFromHistory(id) {
+        const history = getHistory();
+        const entry = history.find(e => e.id === id);
+
+        if (entry) {
+            currentWorksheetData = entry.data;
+            currentGroup = entry.group;
+            if (typeof renderWorksheet === 'function') {
+                renderWorksheet(entry.data, entry.categories, entry.group);
+                // Scroll naar het geladen werkblad
+                document.getElementById('worksheet-output').scrollIntoView({ behavior: 'smooth' });
+                showNotification(`Werkblad van ${new Date(entry.timestamp).toLocaleDateString('nl-NL')} geladen.`);
+            }
+        } else {
+            showNotification("Kon dit werkblad niet vinden in de geschiedenis.", true);
+        }
+    }
+
+    // Wis de geschiedenis
+    clearHistoryBtn.addEventListener('click', () => {
+        localStorage.removeItem('worksheetHistory');
+        renderHistoryList();
+        showNotification("Geschiedenis is gewist.");
+    });
+
+    // Event listener voor het klikken op een geschiedenis-item
+    historyList.addEventListener('click', (e) => {
+        const targetButton = e.target.closest('.load-history-btn');
+        if (targetButton && targetButton.dataset.historyId) {
+            loadWorksheetFromHistory(targetButton.dataset.historyId);
+        }
+    });
+
+    // Laad de lijst bij het opstarten van de pagina
+    renderHistoryList();
+
+    // --- EINDE GESCHIEDENIS FUNCTIES ---
+
 
     // Functies die globaal beschikbaar moeten zijn (voor knoppen in de HTML)
     window.generateStory = async function() {
@@ -433,6 +536,7 @@ document.addEventListener('DOMContentLoaded', () => {
         window.print();
     }
 });
+
 
 
 
