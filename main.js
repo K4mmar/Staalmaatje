@@ -114,16 +114,20 @@ document.addEventListener('DOMContentLoaded', () => {
         const validationPromises = wordList.map(async (item) => {
             const word = item.woord;
             try {
-                const response = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/nl/${word}`);
+                // Gebruik een betrouwbaardere en snellere API voor woordvalidatie
+                const response = await fetch(`https://nl.wiktionary.org/api/rest_v1/page/definition/${word}`);
                 if (!response.ok && response.status === 404) {
                     return { ...item, isValid: false };
                 }
+                // Als de status ok is, bestaat het woord
                 return { ...item, isValid: true };
             } catch (error) {
-                console.warn(`Kon woord "${word}" niet valideren, we gaan uit van het goede.`, error);
+                console.warn(`Kon woord "${word}" niet valideren via Wiktionary, we gaan uit van het goede.`, error);
+                // Fallback: ga ervan uit dat het goed is als de service faalt
                 return { ...item, isValid: true };
             }
         });
+
         const results = await Promise.all(validationPromises);
         return results.filter(r => !r.isValid);
     }
@@ -138,14 +142,25 @@ document.addEventListener('DOMContentLoaded', () => {
             const groupDisplay = currentGroup === '7' ? '7 of 8' : currentGroup;
             
             const userQuery = `Genereer een spellingwerkblad voor groep ${groupDisplay} op basis van deze regels: ${JSON.stringify(geselecteerdeRegels, null, 2)}`;
+            
+            // --- AANGEPAST: Strakkere instructies voor de 'invulzinnen' ---
             const systemPrompt = `Je bent een ervaren en creatieve leerkracht voor het basisonderwijs in Nederland, expert in de 'Staal' spellingmethode. Je taak is het genereren van een compleet, printklaar en didactisch verantwoord spellingwerkblad.
     
     Je volgt deze stappen:
     1.  **Genereer 15 Woorden:** Maak eerst een lijst van 15 unieke, voor de groep geschikte woorden die passen bij de opgegeven spellingcategorieën. **BELANGRIJK: Alle gegenereerde woorden moeten 100% correct gespeld zijn en voorkomen in het Nederlandse woordenboek.**
     2.  **Maak 3 Soorten Oefeningen:** Gebruik deze 15 woorden om 3 verschillende soorten oefeningen te maken. Elke oefeningsoort gebruikt 5 unieke woorden uit de lijst. Zorg dat elk woord precies één keer wordt gebruikt.
-        - **Vorm 1: 'invulzinnen' (5 woorden):** Maak een zin en vervang het doelwoord door '...........'.
-        - **Vorm 2: 'kies_juiste_spelling' (5 woorden):** Maak een opdracht waarbij de leerling moet kiezen tussen het correct gespelde woord en een veelvoorkomende, fonetische fout (bv. 'hond / hont', 'pauw / pau', 'geit / gijt').
+        
+        - **Vorm 1: 'invulzinnen' (5 woorden):** Maak een zin en vervang het doelwoord door '...........' (11 puntjes).
+          **BELANGRIJKE REGELS VOOR INVULZINNEN:**
+          1.  **Duidelijke Context:** De zin moet voldoende context bevatten zodat een kind het ontbrekende woord logischerwijs kan *raden*. De zin moet minstens *twee* contextwoorden bevatten.
+          2.  **Geen Vage Zinnen:** VERBIED zinnen als 'Ik heb een ...........', 'Het ........... is mooi.', 'Ik zie een ...........', of zinnen die een simpele definitie zijn.
+          3.  **Goed Voorbeeld:** 'Een vogel bouwt een ........... in de boom.' (Context: 'vogel', 'boom').
+          4.  **Slecht Voorbeeld:** 'Dat is een ...........' (Geen context).
+
+        - **Vorm 2: 'kies_juiste_spelling' (5 woorden):** Maak een opdracht waarbij de leerling moet kiezen tussen het correct gespelde woord en een veelvoorkomende, fonetische fout (bv. 'hond / hont', 'pauw / pau', 'geit / gijt'). Gebruik een ' / ' als scheidingsteken.
+
         - **Vorm 3: 'regelvragen' (5 woorden):** Maak een concrete vraag die de spellingstrategie test. **BELANGRIJK: De vraag MOET één van deze formats gebruiken:** "Maak het meervoud: [enkelvoudsvorm] ⟶", "Maak het langer: [verkorte vorm] ⟶", "Maak het verkleinwoord: [grondwoord] ⟶", of "Voeg samen: [deel 1] + [deel 2] ⟶". De vraag moet de leerling leiden naar het invullen van het doelwoord. Abstracte vragen over betekenis zijn STRIKT VERBODEN.
+    
     3.  **Lever het resultaat** als een perfect gestructureerd JSON-object. Gebruik exact dit formaat:
         \`{ "woordenlijst": [ { "woord": "voorbeeld", "categorie": 10 }, ... ], "oefeningen": { "invulzinnen": [ { "opdracht": "...", "woord": "...", "categorie": ... } ], "kies_juiste_spelling": [ { "opdracht": "Kies: ... / ...", "woord": "...", "categorie": ... } ], "regelvragen": [ { "opdracht": "...", "woord": "...", "categorie": ... } ] } }\``;
     
@@ -193,6 +208,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             currentWorksheetData = worksheetData;
+            // Roep de render functie aan die nu in ui-worksheet.js staat
             renderWorksheet(worksheetData, selectedCatIds, currentGroup);
 
         } catch (error) {
@@ -294,3 +310,4 @@ document.addEventListener('DOMContentLoaded', () => {
         window.print();
     }
 });
+
