@@ -69,8 +69,9 @@ window.renderWorksheet = function(worksheetData, selectedCatIds, currentGroup) {
     };
 
     // --- FIX: 'oFefeningen' is 'oefeningen' geworden ---
+    // --- FIX: 'kies_juiste_j_spelling' is 'kies_juiste_spelling' geworden ---
     studentSheetHTML += renderExerciseBlock('Vul het juiste woord in', worksheetData.oefeningen.invulzinnen, 0);
-    studentSheetHTML += renderExerciseBlock('Kies de juiste spelling', worksheetData.oefeningen.kies_juiste_j_spelling, 5);
+    studentSheetHTML += renderExerciseBlock('Kies de juiste spelling', worksheetData.oefeningen.kies_juiste_spelling, 5);
     studentSheetHTML += renderExerciseBlock('Pas de spellingregel toe', worksheetData.oefeningen.regelvragen, 10);
 
     // Plaats de verhaal-container binnen het student-sheet zodat het meeprint
@@ -78,10 +79,11 @@ window.renderWorksheet = function(worksheetData, selectedCatIds, currentGroup) {
 
     studentSheetHTML += `</div>`; // Einde space-y-6
 
+    // --- FIX: 'worksDheetData' is 'worksheetData' geworden ---
     const allExercises = [
         ...worksheetData.oefeningen.invulzinnen,
         ...worksheetData.oefeningen.kies_juiste_spelling,
-        ...worksDheetData.oefeningen.regelvragen
+        ...worksheetData.oefeningen.regelvragen
     ];
 
     const answerSheetHTML = `
@@ -102,8 +104,9 @@ window.renderWorksheet = function(worksheetData, selectedCatIds, currentGroup) {
         </table>
     `;
 
+    // --- FIX: 'classT=' is 'class=' geworden ---
     worksheetOutput.innerHTML = `
-        <div classT="printable-area bg-white p-6 md:p-10 rounded-2xl shadow-lg max-w-4xl mx-auto">
+        <div class="printable-area bg-white p-6 md:p-10 rounded-2xl shadow-lg max-w-4xl mx-auto">
             
             <!-- Tab Knoppen - .no-print HIER TOEGEVOEGD -->
             <div class="sm:flex sm:justify-between items-center border-b border-slate-200 mb-6 no-print">
