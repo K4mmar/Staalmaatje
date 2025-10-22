@@ -5,94 +5,76 @@
 
 let currentWorksheetData = {};
 let currentGroup = null;
-
-// Kleurenpalet
-const COLORS = {
-    blue: '#2073af',
-    orange: '#f19127',
-    green: '#a8c641',
-    slate: '#64748b' // (een grijstint voor tekst)
-};
+let worksheetHistory = []; // Voor de geschiedenis
 
 document.addEventListener('DOMContentLoaded', () => {
-    // Stijlen voor printen toevoegen (compacter)
+    // Stijlen voor printen toevoegen
     const style = document.createElement('style');
     style.innerHTML = `
         @media print {
-            @page { size: A4 portrait; margin: 1cm; } /* Kleinere marges */
-            #student-sheet, #answer-sheet { display: none; }
+            @page { size: A4 portrait; margin: 1cm; }
             body.print-student-sheet #student-sheet { display: block; }
             body.print-answer-sheet #answer-sheet { display: block; }
             .no-print { display: none !important; }
-            .printable-area { box-shadow: none !important; border: none !important; }
             
-            /* Compactere opmaak */
-            #student-sheet h2, #answer-sheet h2 { font-size: 14pt; margin-bottom: 0.5rem; }
-            #student-sheet h3 { font-size: 11pt; margin-bottom: 0.3rem; }
-            #student-sheet .text-base { font-size: 9pt; } /* Lettertype opdrachten kleiner */
-            #student-sheet .p-3 { padding: 0.4rem !important; }
-            #student-sheet .space-y-6 { gap: 1rem; } /* Kleinere ruimte tussen blokken */
-            #student-sheet .mb-8 { margin-bottom: 1rem !important; }
-            #student-sheet .text-sm { font-size: 9pt; }
+            /* Compactere printstijlen */
+            body.print-student-sheet #student-sheet,
+            body.print-answer-sheet #answer-sheet {
+                padding: 0 !important;
+                margin: 0 !important;
+                box-shadow: none !important;
+                border: none !important;
+            }
+            .printable-area {
+                padding: 0 !important;
+                margin: 0 !important;
+                box-shadow: none !important;
+                border: none !important;
+            }
+            #student-sheet .text-2xl, #answer-sheet .text-2xl { font-size: 14pt; }
+            #student-sheet .text-xl, #answer-sheet .text-xl { font-size: 12pt; }
+            #student-sheet .text-base, #answer-sheet .text-base { font-size: 9pt; }
+            #student-sheet .mb-8, #answer-sheet .mb-8 { margin-bottom: 1rem; }
+            #student-sheet .mb-6, #answer-sheet .mb-6 { margin-bottom: 0.75rem; }
+            #student-sheet .mb-4, #answer-sheet .mb-4 { margin-bottom: 0.5rem; }
+            #student-sheet .p-4, #answer-sheet .p-4 { padding: 0.5rem; }
+            #student-sheet .p-3, #answer-sheet .p-3 { padding: 0.4rem; }
+            #student-sheet .gap-4, #answer-sheet .gap-4 { gap: 0.5rem; }
+            #student-sheet .space-y-6, #answer-sheet .space-y-6 { gap: 0.75rem; }
+            #student-sheet .mt-12, #answer-sheet .mt-12 { margin-top: 1rem; }
         }
     `;
     document.head.appendChild(style);
 
-    // --- DOM-elementen ophalen ---
+    // DOM-elementen ophalen
     const groupButtonsContainer = document.getElementById('group-buttons');
     const categorySelection = document.getElementById('category-selection');
     const categoryList = document.getElementById('category-list');
     const generateBtnContainer = document.getElementById('generate-button-container');
     const generateBtn = document.getElementById('generate-btn');
-    const historyListContainer = document.getElementById('history-list');
+    const worksheetOutput = document.getElementById('worksheet-output');
+    
+    // Tab-elementen
+    const tabNew = document.getElementById('tab-new');
+    const tabArchive = document.getElementById('tab-archive');
+    const newPanel = document.getElementById('new-panel');
+    const archivePanel = document.getElementById('archive-panel');
+    const welcomePanel = document.getElementById('welcome-panel');
+    
+    // Geschiedenis-elementen
+    const historyList = document.getElementById('history-list');
     const clearHistoryBtn = document.getElementById('clear-history-btn');
-
-    // --- Tab-navigatie (Nieuw / Opgeslagen) ---
-    const newTab = document.getElementById('new-worksheet-tab');
-    const historyTab = document.getElementById('history-tab');
-    const newPanel = document.getElementById('new-worksheet-panel');
-    const historyPanel = document.getElementById('history-panel');
-
-    newTab.addEventListener('click', (e) => {
-        e.preventDefault();
-        newTab.classList.add('border-blue-600', 'text-blue-600');
-        newTab.classList.remove('border-transparent', 'text-slate-500', 'hover:text-slate-700', 'hover:border-slate-300');
-        newTab.style.color = COLORS.blue;
-        newTab.style.borderColor = COLORS.blue;
-        
-        historyTab.classList.add('border-transparent', 'text-slate-500', 'hover:text-slate-700', 'hover:border-slate-300');
-        historyTab.classList.remove('border-blue-600', 'text-blue-600');
-        historyTab.style.color = '';
-        historyTab.style.borderColor = 'transparent';
-
-        newPanel.classList.remove('hidden');
-        historyPanel.classList.add('hidden');
-    });
-
-    historyTab.addEventListener('click', (e) => {
-        e.preventDefault();
-        historyTab.classList.add('border-blue-600', 'text-blue-600');
-        historyTab.classList.remove('border-transparent', 'text-slate-500', 'hover:text-slate-700', 'hover:border-slate-300');
-        historyTab.style.color = COLORS.blue;
-        historyTab.style.borderColor = COLORS.blue;
-
-        newTab.classList.add('border-transparent', 'text-slate-500', 'hover:text-slate-700', 'hover:border-slate-300');
-        newTab.classList.remove('border-blue-600', 'text-blue-600');
-        newTab.style.color = '';
-        newTab.style.borderColor = 'transparent';
-        
-        newPanel.classList.add('hidden');
-        historyPanel.classList.remove('hidden');
-        
-        renderHistoryList(); // Laad de lijst als je op de tab klikt
-    });
 
     // Functie voor notificaties
     function showNotification(message, isError = false) {
         const notification = document.createElement('div');
         notification.textContent = message;
-        notification.className = `fixed top-5 right-5 p-4 rounded-lg shadow-lg text-white transition-opacity duration-300 z-50 ${isError ? 'bg-red-500' : 'bg-blue-500'}`;
-        notification.style.backgroundColor = isError ? '#E53E3E' : COLORS.blue;
+        // Gebruik de nieuwe kleuren
+        const bgColor = isError ? 'bg-red-500' : (COLORS.blue || '#2073af');
+        notification.className = `fixed top-5 right-5 p-4 rounded-lg shadow-lg text-white transition-opacity duration-300 z-50 ${isError ? 'bg-red-500' : ''}`;
+        if (!isError) {
+            notification.style.backgroundColor = bgColor;
+        }
         document.body.appendChild(notification);
 
         setTimeout(() => {
@@ -107,138 +89,146 @@ document.addEventListener('DOMContentLoaded', () => {
     ['4', '5', '6', '7/8'].forEach(group => {
         const btn = document.createElement('button');
         btn.textContent = `Groep ${group}`;
-        btn.className = 'group-btn font-semibold py-2 px-4 rounded-lg transition-all transform hover:scale-105 bg-slate-100 text-slate-700 hover:bg-slate-200';
+        // Gebruik de nieuwe kleuren
+        btn.className = 'group-btn font-semibold py-2 px-4 rounded-lg transition-transform transform hover:scale-105 bg-slate-200 text-slate-700';
         btn.dataset.group = group === '7/8' ? '7' : group;
-        groupButtonsContainer.appendChild(btn);
-    });
-
-    // Event listener voor groep-knoppen
-    groupButtonsContainer.addEventListener('click', (e) => {
-        if (e.target.classList.contains('group-btn')) {
-            currentGroup = e.target.dataset.group;
-
-            document.querySelectorAll('.group-btn').forEach(btn => {
-                btn.classList.remove('bg-blue-600', 'text-white');
-                btn.classList.add('bg-slate-100', 'text-slate-700');
-                btn.style.backgroundColor = '';
-                btn.style.color = '';
-            });
-            e.target.style.backgroundColor = COLORS.blue;
-            e.target.style.color = 'white';
-            e.target.classList.remove('bg-slate-100', 'text-slate-700');
-
-            displayCategories(currentGroup);
-            // categorySelection.classList.remove('hidden'); // VERWIJDERD
-            // generateBtnContainer.classList.remove('hidden'); // VERWIJDERD
-            document.getElementById('worksheet-output').innerHTML = ''; // Maak vorig werkblad leeg
+        if (groupButtonsContainer) {
+            groupButtonsContainer.appendChild(btn);
         }
     });
 
+    // Event listener voor groep-knoppen
+    if (groupButtonsContainer) {
+        groupButtonsContainer.addEventListener('click', (e) => {
+            if (e.target.classList.contains('group-btn')) {
+                handleGroupSelection(e.target, e.target.dataset.group);
+            }
+        });
+    }
+
+    function handleGroupSelection(selectedBtn, group) {
+        currentGroup = group;
+
+        // Update knopstijlen
+        document.querySelectorAll('.group-btn').forEach(btn => {
+            btn.classList.remove('text-white');
+            btn.classList.add('bg-slate-200', 'text-slate-700');
+            btn.style.backgroundColor = ''; // Reset inline style
+        });
+        selectedBtn.classList.add('text-white');
+        selectedBtn.classList.remove('bg-slate-200', 'text-slate-700');
+        selectedBtn.style.backgroundColor = COLORS.blue; // Gebruik de kleurvar
+
+        displayCategories(currentGroup);
+        if(worksheetOutput) worksheetOutput.innerHTML = ''; // Wis vorig werkblad
+    }
+
     // Categorieën weergeven op basis van groep
     function displayCategories(group) {
+        if (!categoryList) return;
         categoryList.innerHTML = '';
-        const cats = typeof groupCategories !== 'undefined' ? groupCategories[group] : [];
-        if (!cats) return;
+        const cats = (typeof groupCategories !== 'undefined' && groupCategories[group]) ? groupCategories[group] : [];
+        if (cats.length === 0) return;
+        
         cats.forEach(catId => {
             const div = document.createElement('div');
             div.className = 'flex items-center';
+            // Checkbox ook stylen met de nieuwe kleur
             div.innerHTML = `
-                <input id="cat-${catId}" type="checkbox" data-cat-id="${catId}" class="h-4 w-4 rounded border-slate-300 focus:ring-blue-500" style="color: ${COLORS.blue};">
-                <label for="cat-${catId}" class="ml-3 block text-sm text-slate-700">${catId}. ${categories[catId] || 'Onbekend'}</label>
+                <input id="cat-${catId}" type="checkbox" data-cat-id="${catId}" class="h-4 w-4 rounded border-gray-300 focus:ring-opacity-50" style="color: ${COLORS.blue};">
+                <label for="cat-${catId}" class="ml-3 block text-sm text-slate-700">${catId}. ${(typeof categories !== 'undefined' && categories[catId]) ? categories[catId] : 'Onbekend'}</label>
             `;
             categoryList.appendChild(div);
         });
     }
 
+
     // Maximaal 3 categorieën selecteren
-    categoryList.addEventListener('change', (e) => {
-        if (e.target.type === 'checkbox') {
-            const checkedCheckboxes = categoryList.querySelectorAll('input[type="checkbox"]:checked');
-            if (checkedCheckboxes.length > 3) {
-                showNotification('Je kunt maximaal 3 categorieën selecteren.', true);
-                e.target.checked = false;
-            }
-        }
-    });
-
-    // Event listener voor 'Maak Werkblad' knop
-    generateBtn.addEventListener('click', async () => {
-        const selectedCatIds = Array.from(categoryList.querySelectorAll('input:checked')).map(cb => parseInt(cb.dataset.catId));
-
-        if (selectedCatIds.length === 0) {
-            showNotification('Kies alsjeblieft minstens één categorie.', true);
-            return;
-        }
-        await generateWorksheetWithAI(selectedCatIds);
-    });
-
-    // Valideer woorden met de dictionary API
-    async function validateWords(wordList) {
-        const validationPromises = wordList.map(async (item) => {
-            const word = item.woord;
-            try {
-                const response = await fetch(`https://nl.wiktionary.org/api/rest_v1/page/definition/${encodeURIComponent(word)}`);
-                if (!response.ok && response.status === 404) {
-                    return { ...item, isValid: false };
+    if (categoryList) {
+        categoryList.addEventListener('change', (e) => {
+            if (e.target.type === 'checkbox') {
+                const checkedCheckboxes = categoryList.querySelectorAll('input[type="checkbox"]:checked');
+                if (checkedCheckboxes.length > 3) {
+                    showNotification('Je kunt maximaal 3 categorieën selecteren.', true);
+                    e.target.checked = false;
                 }
-                const data = await response.json();
-                if (!data.nl || data.nl.length === 0) {
-                   console.warn(`Wiktionary gaf geen definitie voor "${word}", fallback naar DictionaryAPI.`);
-                   const fallbackResponse = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/nl/${encodeURIComponent(word)}`);
-                   if (!fallbackResponse.ok && fallbackResponse.status === 404) {
-                       return { ...item, isValid: false };
-                   }
-                }
-                return { ...item, isValid: true };
-            } catch (error) {
-                console.warn(`Kon woord "${word}" niet valideren, we gaan uit van het goede.`, error);
-                return { ...item, isValid: true };
             }
         });
-
-        const results = await Promise.all(validationPromises);
-        return results.filter(r => !r.isValid);
     }
 
-    // Hoofdfunctie voor het genereren van het werkblad met AI
-    async function generateWorksheetWithAI(selectedCatIds) {
+    // Event listener voor 'Maak Werkblad' knop
+    if (generateBtn) {
+        generateBtn.addEventListener('click', async () => {
+            const selectedCatIds = Array.from(categoryList.querySelectorAll('input:checked')).map(cb => parseInt(cb.dataset.catId));
+
+            if (selectedCatIds.length === 0) {
+                showNotification('Kies alsjeblieft minstens één categorie.', true);
+                return;
+            }
+            // Sla de selecties op voor de geschiedenis
+            const generationData = {
+                selectedCatIds: selectedCatIds,
+                group: currentGroup
+            };
+            await generateWorksheetWithAI(generationData, true); // true = save to history
+        });
+    }
+
+    // --- AANGEPAST: Functie accepteert nu een data-object ---
+    async function generateWorksheetWithAI(generationData, saveToHistory = false) {
+        const { selectedCatIds, group } = generationData;
+        
+        // Zorg dat de UI klopt, ook bij laden uit geschiedenis
+        currentGroup = group; 
+        const activeBtn = document.querySelector(`.group-btn[data-group="${group === '7' ? '7/8' : group}"]`);
+        if (activeBtn) {
+            handleGroupSelection(activeBtn, group);
+        }
+        // Vink de checkboxes aan
+        if (categoryList) {
+            Array.from(categoryList.querySelectorAll('input[type="checkbox"]')).forEach(cb => {
+                cb.checked = selectedCatIds.includes(parseInt(cb.dataset.catId));
+            });
+        }
+
+
         generateBtn.disabled = true;
         generateBtn.innerHTML = `<i class="fas fa-spinner fa-spin mr-2"></i> Woorden worden bedacht...`;
 
         try {
-            const geselecteerdeRegels = typeof spellingRegels !== 'undefined'
+            const geselecteerdeRegels = (typeof spellingRegels !== 'undefined')
                 ? spellingRegels.filter(regel => selectedCatIds.includes(regel.id))
                 : [];
-            const groupDisplay = currentGroup === '7' ? '7 of 8' : currentGroup;
+            const groupDisplay = group === '7' ? '7 of 8' : group;
 
+            // --- AANGEPAST: Gebruikt de 'group' var ---
             const userQuery = `Genereer een spellingwerkblad voor groep ${groupDisplay} op basis van deze regels: ${JSON.stringify(geselecteerdeRegels, null, 2)}`;
-            
-            // Systeemprompt met niveau-specifieke zinnen
+
             const systemPrompt = `Je bent een ervaren en creatieve leerkracht voor het basisonderwijs in Nederland, expert in de 'Staal' spellingmethode. Je taak is het genereren van een compleet, printklaar en didactisch verantwoord spellingwerkblad.
-
-    **ALLERBELANGRIJKSTE REGEL:** Pas de complexiteit van de zinnen AAN OP DE GROEP:
-    - **Groep 4:** Zeer korte, simpele zinnen (max. 8-10 woorden). Gebruik alleen basiswoordenschat.
-    - **Groep 5/6:** Korte zinnen (max. 12 woorden). Eenvoudige zinsbouw.
-    - **Groep 7/8:** Zinnen mogen iets langer, maar de focus moet 100% op de spelling blijven, niet op begrijpend lezen.
-
+    
     Je volgt deze stappen:
     1.  **Genereer 15 Woorden:** Maak eerst een lijst van 15 unieke, voor de groep geschikte woorden die passen bij de opgegeven spellingcategorieën. **BELANGRIJK: Alle gegenereerde woorden moeten 100% correct gespeld zijn en voorkomen in het Nederlandse woordenboek.**
     2.  **Maak 3 Soorten Oefeningen:** Gebruik deze 15 woorden om 3 verschillende soorten oefeningen te maken. Elke oefeningsoort gebruikt 5 unieke woorden uit de lijst. Zorg dat elk woord precies één keer wordt gebruikt.
 
-        - **Vorm 1: 'invulzinnen' (5 woorden):** Maak een **interessante, contextrijke zin** die past bij het leesniveau (zie hoofdregel) en vervang het doelwoord door '...'.
-          **REGELS VOOR INVULZINNEN:**
-          1.  **NIVEAU:** Volg de 'ALLERBELANGRIJKSTE REGEL' over zinscomplexiteit.
-          2.  **Plaatsing Placeholder:** De '...' hoeft NIET aan het einde te staan.
-          3.  **Engagement:** Maak de zinnen leuk (dieren, avontuur, school, spelletjes).
-          4.  **Geen Vage Zinnen:** VERBIED zinnen als 'Ik heb een ...', 'Het ... is mooi.', 'Ik zie een ...'.
+        - **Vorm 1: 'invulzinnen' (5 woorden):** Maak een **interessante, contextrijke zin** voor een basisschoolkind en vervang het doelwoord door '...' (drie puntjes).
+          
+          **BELANGRIJKE HOOFDREGEL: Pas de zinscomplexiteit AAN OP DE GROEP!**
+          - **Groep 4:** Zeer korte, simpele zinnen (max. 8-10 woorden, geen moeilijke bijzinnen). Gebruik basiswoorden.
+          - **Groep 5/6:** Korte, duidelijke zinnen (max. 10-12 woorden).
+          - **Groep 7/8:** Zinnen mogen iets langer, maar de focus blijft op het woord, niet op begrijpend lezen.
 
-        - **Vorm 2: 'kies_juiste_spelling' (5 woorden):** Maak een opdracht waarbij de leerling moet kiezen tussen het correct gespelde woord en een veelvoorkomende, fonetische fout (bv. 'hond / hont', 'pauw / pau'). Gebruik een ' / ' als scheidingsteken.
+          **ANDERE REGELS VOOR INVULZINNEN:**
+          1.  **Plaatsing Placeholder:** De '...' hoeft **NIET** aan het einde te staan.
+          2.  **Duidelijke Context:** De zin moet nog steeds voldoende context (minstens 2 woorden) bevatten zodat het kind het woord kan raden.
+          3.  **Geen Vage Zinnen:** VERBIED zinnen als 'Ik heb een ...', 'Het ... is mooi.', 'Ik zie een ...', of definities.
 
-        - **Vorm 3: 'regelvragen' (5 woorden):** Maak een concrete vraag die de **specifieke spellingstrategie** van de categorie test.
-          **REGELS VOOR REGELVRAGEN:**
-          1.  **DIDACTISCH:** De vraag moet de leerling dwingen de regel toe te passen.
-          2.  **VOORBEELDEN:** Als de categorie 'Langermaakwoord' is, MOET de vraag zijn "Maak het langer: [woord] ⟶". Als het 'Verkleinwoord' is, "Maak het verkleinwoord: [woord] ⟶". Als het 'Klankgroepenwoord' is, is 'Maak het meervoud' een goede vraag.
-          3.  **DOEL:** De vraag leidt de leerling naar het invullen van het doelwoord.
+        - **Vorm 2: 'kies_juiste_spelling' (5 woorden):** Maak een opdracht waarbij de leerling moet kiezen tussen het correct gespelde woord en een veelvoorkomende, fonetische fout (bv. 'hond / hont', 'pauw / pau', 'geit / gijt'). Gebruik een ' / ' als scheidingsteken.
+
+        - **Vorm 3: 'regelvragen' (5 woorden):** Maak een concrete vraag die de spellingstrategie test. **BELANGRIJK: De vraag MOET de spellingregel van de categorie testen.** * Voorbeeld (Langermaakwoord): "Maak het langer: [verkorte vorm] ⟶"
+          * Voorbeeld (Verkleinwoord): "Maak het verkleinwoord: [grondwoord] ⟶"
+          * Voorbeeld (Samenstelling): "Voeg samen: [deel 1] + [deel 2] ⟶"
+          * Voorbeeld (Kilowoord): "Wat hoor je, wat schrijf je? k-?-lo"
+          * Wees creatief en zorg dat de vraag *altijd* relevant is voor de categorie.
 
     3.  **Lever het resultaat** als een perfect gestructureerd JSON-object. Gebruik exact dit formaat:
         \`{ "woordenlijst": [ { "woord": "voorbeeld", "categorie": 10 }, ... ], "oefeningen": { "invulzinnen": [ { "opdracht": "...", "woord": "...", "categorie": ... } ], "kies_juiste_spelling": [ { "opdracht": "Kies: ... / ...", "woord": "...", "categorie": ... } ], "regelvragen": [ { "opdracht": "...", "woord": "...", "categorie": ... } ] } }\``;
@@ -254,7 +244,7 @@ document.addEventListener('DOMContentLoaded', () => {
             let invalidWords = await validateWords(worksheetData.woordenlijst);
 
             if (invalidWords.length > 0) {
-                generateBtn.innerHTML = `<i class="fas fa-wand-magic-sparkles mr-2"></i> Magie wordt toegevoegd...`;
+                generateBtn.innerHTML = `<i class="fas fa-wand-magic-sparkles mr-2"></i> Magie wordt toegevoegd...`; // Positief bericht
 
                 const invalidWordsInfo = invalidWords.map(item => ({ original: item.woord, categorie: categories[item.categorie] }));
                 const correctionQuery = `Je hebt eerder de volgende woorden gegenereerd die spelfouten bevatten: ${JSON.stringify(invalidWordsInfo)}. Geef de correcte spelling voor elk van deze woorden.`;
@@ -301,11 +291,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
             currentWorksheetData = worksheetData;
-            // Sla op in geschiedenis
-            saveWorksheetToHistory(worksheetData, selectedCatIds, currentGroup);
-
+            
+            // --- AANGEPAST: Sla op in geschiedenis ---
+            if (saveToHistory) {
+                saveWorksheetToHistory(generationData, worksheetData);
+            }
+            
             if (typeof renderWorksheet === 'function') {
-                renderWorksheet(worksheetData, selectedCatIds, currentGroup);
+                // --- AANGEPAST: Geef de *huidige* selecties mee ---
+                renderWorksheet(worksheetData, selectedCatIds, group);
             } else {
                 console.error("renderWorksheet functie niet gevonden. Is ui-worksheet.js correct geladen?");
                  showNotification("Fout bij het weergeven van het werkblad.", true);
@@ -319,7 +313,7 @@ document.addEventListener('DOMContentLoaded', () => {
             } else if (error.message.includes("503")) {
                 userMessage = "De AI-service is momenteel overbelast. Probeer het later opnieuw.";
             } else if (error.message.includes("onvolledig") || error.message.includes("incorrect geformatteerd") || error.message.includes("niet-JSON")) {
-                 userMessage = "De AI gaf een onverwacht antwoord. Proeer het nog eens.";
+                 userMessage = "De AI gaf een onverwacht antwoord. Probeer het nog eens.";
             } else if (error.message.includes("veiligheidsfilter")) {
                 userMessage = error.message;
             }
@@ -380,113 +374,127 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    // ===================================================================================
+    // GESCHIEDENIS FUNCTIES
+    // ===================================================================================
 
-    // --- Geschiedenis Functies ---
-
-    function getHistory() {
-        return JSON.parse(localStorage.getItem('staalmaatjeHistory') || '[]');
+    function loadHistory() {
+        const savedHistory = localStorage.getItem('staalmaatjeHistory');
+        worksheetHistory = savedHistory ? JSON.parse(savedHistory) : [];
     }
 
-    function saveHistory(history) {
-        localStorage.setItem('staalmaatjeHistory', JSON.stringify(history));
+    function saveHistory() {
+        localStorage.setItem('staalmaatjeHistory', JSON.stringify(worksheetHistory));
     }
 
-    function saveWorksheetToHistory(worksheetData, selectedCatIds, group) {
-        let history = getHistory();
-        const groupDisplay = group === '7' ? '7/8' : group;
-        const catNames = selectedCatIds.map(id => categories[id] || 'Onbekend').join(', ');
+    function saveWorksheetToHistory(generationData, worksheetData) {
+        const timestamp = new Date().toISOString();
+        const title = `Groep ${generationData.group === '7' ? '7/8' : generationData.group} - ${generationData.selectedCatIds.map(id => (typeof categories !== 'undefined' && categories[id]) ? categories[id] : '').join(', ').substring(0, 30)}...`;
         
-        const newEntry = {
-            id: new Date().toISOString(),
-            timestamp: new Date().toLocaleString('nl-NL'),
-            title: `Groep ${groupDisplay} - ${catNames}`,
-            data: worksheetData,
-            selectedCatIds: selectedCatIds,
-            group: group
+        const historyEntry = {
+            id: timestamp,
+            title: title,
+            generationData: generationData,
+            worksheetData: worksheetData // Sla het *resultaat* op
         };
 
         // Voeg vooraan toe
-        history.unshift(newEntry);
+        worksheetHistory.unshift(historyEntry);
         
-        // Beperk tot 10 items
-        if (history.length > 10) {
-            history = history.slice(0, 10);
+        // Beperk tot 10
+        if (worksheetHistory.length > 10) {
+            worksheetHistory.pop();
         }
         
-        saveHistory(history);
-    }
-
-    function loadWorksheetFromHistory(id) {
-        const history = getHistory();
-        const entry = history.find(item => item.id === id);
-        if (entry) {
-            currentWorksheetData = entry.data;
-            currentGroup = entry.group;
-            if (typeof renderWorksheet === 'function') {
-                renderWorksheet(entry.data, entry.selectedCatIds, entry.group);
-                // Spring terug naar de 'Nieuw Werkblad' tab om het resultaat te tonen
-                // newTab.click(); // <-- DEZE REGEL IS VERWIJDERD
-            } else {
-                showNotification("Fout bij het laden van het werkblad.", true);
-            }
-        }
-    }
-
-    function deleteWorksheetFromHistory(id) {
-        let history = getHistory();
-        history = history.filter(item => item.id !== id);
-        saveHistory(history);
-        renderHistoryList(); // Ververs de lijst
+        saveHistory();
+        renderHistoryList(); // Update de lijst
     }
 
     function renderHistoryList() {
-        const history = getHistory();
-        historyListContainer.innerHTML = ''; // Maak leeg
-
-        if (history.length === 0) {
-            historyListContainer.innerHTML = `<p class="text-slate-500">Je hebt nog geen werkbladen opgeslagen.</p>`;
-            clearHistoryBtn.classList.add('hidden');
+        if (!historyList) return;
+        
+        historyList.innerHTML = ''; // Maak leeg
+        
+        if (worksheetHistory.length === 0) {
+            historyList.innerHTML = `<p class="text-slate-500">Je hebt nog geen werkbladen gemaakt. Maak een nieuw werkblad en het verschijnt hier!</p>`;
             return;
         }
 
-        clearHistoryBtn.classList.remove('hidden');
-
-        history.forEach(item => {
+        worksheetHistory.forEach(entry => {
             const div = document.createElement('div');
-            div.className = 'flex items-center justify-between p-4 bg-white border border-slate-200 rounded-lg shadow-sm';
+            div.className = 'p-4 border border-slate-200 rounded-lg flex justify-between items-center transition-all hover:bg-slate-50';
             div.innerHTML = `
-                <div class="flex-grow cursor-pointer worksheet-loader" data-id="${item.id}">
-                    <strong class="text-blue-600" style="color: ${COLORS.blue};">${item.title}</strong>
-                    <p class="text-sm text-slate-500">${item.timestamp}</p>
+                <div>
+                    <a href="#" class="font-semibold" style="color: ${COLORS.blue};" data-history-id="${entry.id}">${entry.title}</a>
+                    <p class="text-sm text-slate-500">${new Date(entry.id).toLocaleString('nl-NL')}</p>
                 </div>
-                <button class="delete-item p-2 text-slate-400 hover:text-red-500" data-id="${item.id}" title="Verwijder dit werkblad">
+                <button data-delete-id="${entry.id}" class="text-red-500 hover:text-red-700 px-2 py-1 rounded-md">
                     <i class="fas fa-trash-alt"></i>
                 </button>
             `;
-            historyListContainer.appendChild(div);
+            historyList.appendChild(div);
         });
     }
-
-    // Event listener voor de geschiedenislijst (voor laden en verwijderen)
-    historyListContainer.addEventListener('click', (e) => {
-        const loader = e.target.closest('.worksheet-loader');
-        const deleter = e.target.closest('.delete-item');
-
-        if (loader) {
-            loadWorksheetFromHistory(loader.dataset.id);
-        } else if (deleter) {
-            deleteWorksheetFromHistory(deleter.dataset.id);
-        }
-    });
-
-    // Knop om hele geschiedenis te wissen
-    clearHistoryBtn.addEventListener('click', () => {
-        saveHistory([]);
+    
+    function deleteWorksheetFromHistory(id) {
+        worksheetHistory = worksheetHistory.filter(entry => entry.id !== id);
+        saveHistory();
         renderHistoryList();
-    });
+    }
 
-    // --- Einde Geschiedenis Functies ---
+    function loadWorksheetFromHistory(id) {
+        const entry = worksheetHistory.find(entry => entry.id === id);
+        if (!entry) {
+            showNotification('Kon dit werkblad niet vinden in de geschiedenis.', true);
+            return;
+        }
+        
+        // Laad de opgeslagen data
+        currentWorksheetData = entry.worksheetData;
+        
+        // Render het werkblad met de opgeslagen data
+        if (typeof renderWorksheet === 'function') {
+            renderWorksheet(entry.worksheetData, entry.generationData.selectedCatIds, entry.generationData.group);
+        } else {
+            console.error("renderWorksheet functie niet gevonden.");
+            showNotification("Fout bij het weergeven van het werkblad.", true);
+        }
+        
+        // --- DEZE REGEL VEROORZAAKTE DE FOUT ---
+        // We hoeven niet terug naar 'Nieuw'
+        // switchToTab('new'); 
+    }
 
+    // Event listener for history list (laden en verwijderen)
+    if (historyList) {
+        historyList.addEventListener('click', (e) => {
+            const target = e.target.closest('a[data-history-id]');
+            const deleteBtn = e.target.closest('button[data-delete-id]');
+
+            if (target) {
+                e.preventDefault();
+                loadWorksheetFromHistory(target.dataset.historyId);
+            } else if (deleteBtn) {
+                e.preventDefault();
+                // Vervang alert/confirm door custom UI indien gewenst
+                if (window.confirm('Weet je zeker dat je dit opgeslagen werkblad wilt verwijderen?')) {
+                    deleteWorkspeedFromHistory(deleteBtn.dataset.deleteId);
+                }
+            }
+        });
+    }
+    
+    // Knop 'Alles wissen'
+    if (clearHistoryBtn) {
+        clearHistoryBtn.addEventListener('click', () => {
+            // Vervang alert/confirm door custom UI indien gewenst
+            if (window.confirm('Weet je zeker dat je de *volledige* geschiedenis wilt wissen? Dit kan niet ongedaan worden gemaakt.')) {
+                worksheetHistory = [];
+                saveHistory();
+                renderHistoryList();
+            }
+        });
+    }
 
     // Functies die globaal beschikbaar moeten zijn (voor knoppen in de HTML)
     window.generateStory = async function() {
@@ -514,7 +522,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const formattedStory = storyText.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>');
             const storyOutput = document.getElementById('story-output');
             storyOutput.innerHTML = `<p>${formattedStory}</p>`;
-        } catch (error) {
+        } catch (error)
             console.error('Error generating story:', error);
             const storyOutput = document.getElementById('story-output');
             if (storyOutput) {
@@ -537,19 +545,80 @@ document.addEventListener('DOMContentLoaded', () => {
         document.body.classList.add('print-answer-sheet');
         window.print();
     }
-
-    // Init
-    // Stel de standaardkleuren in voor knoppen die niet door JS worden gegenereerd
-    document.getElementById('generate-btn').style.backgroundColor = COLORS.orange;
-    document.getElementById('clear-history-btn').style.backgroundColor = COLORS.slate;
-    document.querySelector('.text-blue-600').style.color = COLORS.blue;
-    document.querySelector('.border-blue-600').style.borderColor = COLORS.blue;
     
-    // Simuleer een klik op de eerste groepknop (Groep 4) om de categorieën te laden
-    if (document.querySelector('.group-btn')) {
-        document.querySelector('.group-btn').click();
+    // ===================================================================================
+    // INIT & TAB LOGICA
+    // ===================================================================================
+    
+    function switchToTab(tabName) {
+        if (tabName === 'new') {
+            // Set active tab styles
+            if (tabNew) {
+                tabNew.style.color = COLORS.blue;
+                tabNew.style.boxShadow = `inset 0 -2px 0 0 ${COLORS.blue}`;
+            }
+            if (tabArchive) {
+                tabArchive.style.color = '';
+                tabArchive.style.boxShadow = 'none';
+            }
+
+            // Show/hide panels
+            if (newPanel) newPanel.classList.remove('hidden');
+            if (welcomePanel) welcomePanel.classList.remove('hidden');
+            if (archivePanel) archivePanel.classList.add('hidden');
+            if (worksheetOutput) worksheetOutput.innerHTML = ''; // Clear worksheet
+            
+            // Reset de "Nieuw" tab naar de standaard (Groep 4)
+            const defaultGroupBtn = document.querySelector('.group-btn[data-group="4"]');
+            if (defaultGroupBtn) {
+                handleGroupSelection(defaultGroupBtn, '4');
+            }
+            
+        } else { // 'archive'
+            // Set active tab styles
+            if (tabNew) {
+                tabNew.style.color = '';
+                tabNew.style.boxShadow = 'none';
+            }
+            if (tabArchive) {
+                tabArchive.style.color = COLORS.blue;
+                tabArchive.style.boxShadow = `inset 0 -2px 0 0 ${COLORS.blue}`;
+            }
+
+            // Show/hide panels
+            if (newPanel) newPanel.classList.add('hidden');
+            if (welcomePanel) welcomePanel.classList.add('hidden');
+            if (archivePanel) archivePanel.classList.remove('hidden');
+            if (worksheetOutput) worksheetOutput.innerHTML = ''; // Clear worksheet
+            
+            // Laad en toon de geschiedenis
+            renderHistoryList();
+        }
     }
-    
-});
 
+    // Tab-logica
+    if (tabNew) {
+        tabNew.addEventListener('click', (e) => {
+            e.preventDefault();
+            switchToTab('new');
+        });
+    }
+
+    if (tabArchive) {
+        tabArchive.addEventListener('click', (e) => {
+            e.preventDefault();
+            switchToTab('archive');
+        });
+    }
+
+    // --- INIT ---
+    loadHistory();
+    // Selecteer Groep 4 standaard
+    const defaultGroupBtn = document.querySelector('.group-btn[data-group="4"]');
+    if (defaultGroupBtn) {
+        handleGroupSelection(defaultGroupBtn, '4');
+    }
+    // Start op de 'Nieuw' tab
+    switchToTab('new');
+});
 
