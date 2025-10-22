@@ -48,19 +48,19 @@ window.renderWorksheet = function(worksheetData, selectedCatIds, currentGroup) {
 
         exercises.forEach((item, index) => {
             const itemNumber = startIndex + index + 1;
-            // Toon altijd de volledige opdrachttekst zoals die van de AI komt
             const opdrachtTekst = item.opdracht;
 
-            // --- GECORRIGEERD: Layout aangepast om overlap te voorkomen ---
-            // We gebruiken nu een standaard flex-row, geen 'absolute' positionering meer.
+            // --- GECORRIGEERD: Structuur voor uitlijning met categorie rechts ---
             blockHTML += `
-                <div class="p-3 border border-gray-200 rounded-lg flex items-start gap-3">
-                    <span class="font-semibold text-gray-500 mt-1">${itemNumber}.</span>
-                    <div class="flex-grow">
-                        <p class="text-base">${opdrachtTekst}</p>
-                        <div class="mt-2 h-8 border-b-2 border-gray-300"></div>
+                <div class="p-3 border border-gray-200 rounded-lg flex items-start justify-between gap-3">
+                    <div class="flex items-start gap-3 flex-grow">
+                        <span class="font-semibold text-gray-500 mt-1">${itemNumber}.</span>
+                        <div class="flex-grow">
+                            <p class="text-base">${opdrachtTekst}</p>
+                            <div class="mt-2 h-8 border-b-2 border-gray-300"></div> {/* Aparte schrijflijn */}
+                        </div>
                     </div>
-                    <span class="flex-shrink-0 text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full whitespace-nowrap mt-1">${categoriesMap[item.categorie] || ''}</span>
+                    <span class="text-xs text-gray-400 bg-gray-100 px-2 py-1 rounded-full mt-1 flex-shrink-0">${categoriesMap[item.categorie] || ''}</span>
                 </div>
             `;
         });
@@ -101,23 +101,93 @@ window.renderWorksheet = function(worksheetData, selectedCatIds, currentGroup) {
 
     worksheetOutput.innerHTML = `
         <div class="printable-area bg-white p-6 md:p-10 rounded-2xl shadow-lg max-w-4xl mx-auto">
-            <div class="no-print mb-6 flex justify-end items-center gap-4">
-                <button onclick="printStudentWorksheet()" class="bg-blue-600 text-white font-semibold py-2 px-6 rounded-full hover:bg-blue-700 transition-transform transform hover:scale-105">
-                    <i class="fas fa-print mr-2"></i> Print Werkblad
-                </button>
-                <button onclick="printAnswerSheet()" class="bg-green-600 text-white font-semibold py-2 px-6 rounded-full hover:bg-green-700 transition-transform transform hover:scale-105">
-                    <i class="fas fa-print mr-2"></i> Print Antwoorden
-                </button>
-                <button id="generate-story-btn" onclick="generateStory()" class="bg-purple-600 text-white font-semibold py-2 px-6 rounded-full hover:bg-purple-700 transition-transform transform hover:scale-105">
-                    ✨ Maak een Verhaal
-                </button>
+            
+            <!-- Tab Knoppen (niet printen) -->
+            <div id="worksheet-tabs" class="mb-6 border-b border-gray-200 no-print">
+                <nav class="-mb-px flex gap-6" aria-label="Tabs">
+                    <button id="tab-btn-student" onclick="switchTab('student')" class="tab-btn active-tab-btn" type="button">
+                        Werkblad
+                    </button>
+                    <button id="tab-btn-answer" onclick="switchTab('answer')" class="tab-btn" type="button">
+                        Antwoordenblad
+                    </button>
+                </nav>
             </div>
 
-            <div id="student-sheet" class="prose max-w-none">${studentSheetHTML}</div>
-            <div id="answer-sheet" class="prose max-w-none page-break mt-12">${answerSheetHTML}</div>
+            <!-- Tab Panelen -->
+            <div id="tab-panel-student" class="tab-panel">
+                <!-- Knoppen voor dit tabblad -->
+                <div class="no-print mb-6 flex justify-end items-center gap-4">
+                    <button onclick="printStudentWorksheet()" class="bg-blue-600 text-white font-semibold py-2 px-6 rounded-full hover:bg-blue-700 transition-transform transform hover:scale-105">
+                        <i class="fas fa-print mr-2"></i> Print Werkblad
+                    </button>
+                    <button id="generate-story-btn" onclick="generateStory()" class="bg-purple-600 text-white font-semibold py-2 px-6 rounded-full hover:bg-purple-700 transition-transform transform hover:scale-105">
+                        ✨ Maak een Verhaal
+                    </button>
+                </div>
+                
+                <!-- Inhoud Werkblad -->
+                <div id="student-sheet" class="prose max-w-none">${studentSheetHTML}</div>
+                
+                <!-- Verhaal container -->
+                <div id="story-container" class="prose max-w-none mt-12 no-print"></div>
+            </div>
 
-            <div id="story-container" class="prose max-w-none mt-12 no-print"></div>
+            <div id="tab-panel-answer" class="tab-panel hidden">
+                <!-- Knoppen voor dit tabblad -->
+                <div class="no-print mb-6 flex justify-end items-center gap-4">
+                    <button onclick="printAnswerSheet()" class="bg-green-600 text-white font-semibold py-2 px-6 rounded-full hover:bg-green-700 transition-transform transform hover:scale-105">
+                        <i class="fas fa-print mr-2"></i> Print Antwoorden
+                    </button>
+                </div>
+                
+                <!-- Inhoud Antwoordenblad -->
+                <div id="answer-sheet" class="prose max-w-none">${answerSheetHTML}</div>
+            </div>
+
         </div>
+
+        <!-- Script voor tabbladen (inline) -->
+        <script class="no-print">
+        function switchTab(tabName) {
+            const studentPanel = document.getElementById('tab-panel-student');
+            const answerPanel = document.getElementById('tab-panel-answer');
+            const studentBtn = document.getElementById('tab-btn-student');
+            const answerBtn = document.getElementById('tab-btn-answer');
+
+            if (tabName === 'student') {
+                studentPanel.classList.remove('hidden');
+                answerPanel.classList.add('hidden');
+                studentBtn.classList.add('active-tab-btn');
+                answerBtn.classList.remove('active-tab-btn');
+            } else {
+                studentPanel.classList.add('hidden');
+                answerPanel.classList.remove('hidden');
+                studentBtn.classList.remove('active-tab-btn');
+                answerBtn.classList.add('active-tab-btn');
+            }
+        }
+        </script>
+
+        <!-- Stijlen voor tabbladen (inline) -->
+        <style>
+            .tab-btn {
+                border-bottom: 2px solid transparent;
+                padding: 0.5rem 1rem;
+                font-size: 1rem;
+                font-weight: 600;
+                color: #4b5563; /* gray-600 */
+                transition: all 0.2s ease;
+            }
+            .tab-btn:hover {
+                border-bottom-color: #d1d5db; /* gray-300 */
+                color: #1f2937; /* gray-800 */
+            }
+            .tab-btn.active-tab-btn {
+                border-bottom-color: #ec4899; /* pink-500 */
+                color: #ec4899; /* pink-500 */
+            }
+        </style>
     `;
 }; // Einde van renderWorksheet functie
 
