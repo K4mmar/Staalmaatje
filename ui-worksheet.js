@@ -51,15 +51,16 @@ window.renderWorksheet = function(worksheetData, selectedCatIds, currentGroup) {
             // Toon altijd de volledige opdrachttekst zoals die van de AI komt
             const opdrachtTekst = item.opdracht;
 
-            // --- GECORRIGEERD: Zichtbare commentaren verwijderd ---
+            // --- GECORRIGEERD: Layout aangepast om overlap te voorkomen ---
+            // We gebruiken nu een standaard flex-row, geen 'absolute' positionering meer.
             blockHTML += `
-                <div class="p-3 border border-gray-200 rounded-lg flex items-start gap-3 relative">
+                <div class="p-3 border border-gray-200 rounded-lg flex items-start gap-3">
                     <span class="font-semibold text-gray-500 mt-1">${itemNumber}.</span>
-                    <div class="flex-grow pr-20">
+                    <div class="flex-grow">
                         <p class="text-base">${opdrachtTekst}</p>
                         <div class="mt-2 h-8 border-b-2 border-gray-300"></div>
                     </div>
-                    <span class="absolute top-2 right-2 text-xs text-gray-400 bg-gray-100 px-2 py-1 rounded-full">${categoriesMap[item.categorie] || ''}</span>
+                    <span class="flex-shrink-0 text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full whitespace-nowrap mt-1">${categoriesMap[item.categorie] || ''}</span>
                 </div>
             `;
         });
@@ -119,3 +120,4 @@ window.renderWorksheet = function(worksheetData, selectedCatIds, currentGroup) {
         </div>
     `;
 }; // Einde van renderWorksheet functie
+
