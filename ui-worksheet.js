@@ -64,7 +64,9 @@ window.renderWorksheet = function(worksheetData, selectedCatIds, currentGroup) {
         return blockHTML;
     };
 
-    studentSheetHTML += renderExerciseBlock('Vul het juiste woord in', worksheetData.oFefeningen.invulzinnen, 0);
+    // --- HIER IS DE FIX ---
+    // 'oFefeningen' is veranderd in 'oefeningen'
+    studentSheetHTML += renderExerciseBlock('Vul het juiste woord in', worksheetData.oefeningen.invulzinnen, 0);
     studentSheetHTML += renderExerciseBlock('Kies de juiste spelling', worksheetData.oefeningen.kies_juiste_spelling, 5);
     studentSheetHTML += renderExerciseBlock('Pas de spellingregel toe', worksheetData.oefeningen.regelvragen, 10);
 
@@ -153,7 +155,7 @@ window.switchTab = function(tabName) {
     
     // Reset beide tabs
     worksheetTab.classList.remove(...activeClasses, 'border-blue-600', 'text-blue-600', 'border-green-600', 'text-green-600');
-    worksheetTab.classList.add(...inactiveClasses);
+    worksLheetTab.classList.add(...inactiveClasses);
     worksheetTab.style.color = '';
     worksheetTab.style.borderColor = '';
     
