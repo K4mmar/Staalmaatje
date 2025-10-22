@@ -128,8 +128,8 @@ document.addEventListener('DOMContentLoaded', () => {
             e.target.classList.remove('bg-slate-100', 'text-slate-700');
 
             displayCategories(currentGroup);
-            categorySelection.classList.remove('hidden');
-            generateBtnContainer.classList.remove('hidden');
+            // categorySelection.classList.remove('hidden'); // VERWIJDERD
+            // generateBtnContainer.classList.remove('hidden'); // VERWIJDERD
             document.getElementById('worksheet-output').innerHTML = ''; // Maak vorig werkblad leeg
         }
     });
@@ -544,6 +544,11 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('clear-history-btn').style.backgroundColor = COLORS.slate;
     document.querySelector('.text-blue-600').style.color = COLORS.blue;
     document.querySelector('.border-blue-600').style.borderColor = COLORS.blue;
+    
+    // Simuleer een klik op de eerste groepknop (Groep 4) om de categorieën te laden
+    if (document.querySelector('.group-btn')) {
+        document.querySelector('.group-btn').click();
+    }
     
 });
 
