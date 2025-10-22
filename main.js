@@ -10,8 +10,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // Stijlen voor printen toevoegen
     const style = document.createElement('style');
     style.innerHTML = `
-        @media print { 
-            @page { size: A4 portrait; margin: 1.5cm; } 
+        @media print {
+            @page { size: A4 portrait; margin: 1.5cm; }
             #student-sheet, #answer-sheet { display: none; }
             body.print-student-sheet #student-sheet { display: block; }
             body.print-answer-sheet #answer-sheet { display: block; }
@@ -34,7 +34,7 @@ document.addEventListener('DOMContentLoaded', () => {
         notification.textContent = message;
         notification.className = `fixed top-5 right-5 p-4 rounded-lg shadow-lg text-white transition-opacity duration-300 z-50 ${isError ? 'bg-red-500' : 'bg-blue-500'}`;
         document.body.appendChild(notification);
-        
+
         setTimeout(() => {
             notification.style.opacity = '0';
             setTimeout(() => {
@@ -56,7 +56,7 @@ document.addEventListener('DOMContentLoaded', () => {
     groupButtonsContainer.addEventListener('click', (e) => {
         if (e.target.classList.contains('group-btn')) {
             currentGroup = e.target.dataset.group;
-            
+
             document.querySelectorAll('.group-btn').forEach(btn => {
                 btn.classList.remove('bg-pink-600', 'text-white');
                 btn.classList.add('bg-gray-200', 'text-gray-700');
@@ -67,7 +67,7 @@ document.addEventListener('DOMContentLoaded', () => {
             displayCategories(currentGroup);
             categorySelection.classList.remove('hidden');
             generateBtnContainer.classList.remove('hidden');
-            document.getElementById('worksheet-output').innerHTML = ''; 
+            document.getElementById('worksheet-output').innerHTML = '';
         }
     });
 
@@ -97,11 +97,11 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
     });
-    
+
     // Event listener voor 'Maak Werkblad' knop
     generateBtn.addEventListener('click', async () => {
         const selectedCatIds = Array.from(categoryList.querySelectorAll('input:checked')).map(cb => parseInt(cb.dataset.catId));
-        
+
         if (selectedCatIds.length === 0) {
             showNotification('Kies alsjeblieft minstens één categorie.', true);
             return;
@@ -114,24 +114,32 @@ document.addEventListener('DOMContentLoaded', () => {
         const validationPromises = wordList.map(async (item) => {
             const word = item.woord;
             try {
-                // Gebruik een betrouwbaardere en snellere API voor woordvalidatie
-                const response = await fetch(`https://nl.wiktionary.org/api/rest_v1/page/definition/${word}`);
+                // Gebruik Wiktionary API voor woordvalidatie
+                const response = await fetch(`https://nl.wiktionary.org/api/rest_v1/page/definition/${encodeURIComponent(word)}`);
                 if (!response.ok && response.status === 404) {
                     return { ...item, isValid: false };
                 }
-                // Als de status ok is, bestaat het woord
+                // Check of er definities zijn (soms geeft 200 OK maar geen inhoud)
+                const data = await response.json();
+                if (!data.nl || data.nl.length === 0) {
+                   // Probeer fallback naar Dictionary API
+                   console.warn(`Wiktionary gaf geen definitie voor "${word}", fallback naar DictionaryAPI.`);
+                   const fallbackResponse = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/nl/${encodeURIComponent(word)}`);
+                   if (!fallbackResponse.ok && fallbackResponse.status === 404) {
+                       return { ...item, isValid: false };
+                   }
+                }
                 return { ...item, isValid: true };
             } catch (error) {
-                console.warn(`Kon woord "${word}" niet valideren via Wiktionary, we gaan uit van het goede.`, error);
-                // Fallback: ga ervan uit dat het goed is als de service faalt
-                return { ...item, isValid: true };
+                console.warn(`Kon woord "${word}" niet valideren, we gaan uit van het goede.`, error);
+                return { ...item, isValid: true }; // Fallback: ga ervan uit dat het goed is als API's falen
             }
         });
 
         const results = await Promise.all(validationPromises);
         return results.filter(r => !r.isValid);
     }
-    
+
     // Hoofdfunctie voor het genereren van het werkblad met AI
     async function generateWorksheetWithAI(selectedCatIds) {
         generateBtn.disabled = true;
@@ -140,47 +148,50 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const geselecteerdeRegels = spellingRegels.filter(regel => selectedCatIds.includes(regel.id));
             const groupDisplay = currentGroup === '7' ? '7 of 8' : currentGroup;
-            
+
             const userQuery = `Genereer een spellingwerkblad voor groep ${groupDisplay} op basis van deze regels: ${JSON.stringify(geselecteerdeRegels, null, 2)}`;
-            
-            // --- AANGEPAST: Strakkere instructies voor de 'invulzinnen' ---
+
+            // --- AANGEPAST: Nog specifiekere instructies voor de 'invulzinnen' ---
             const systemPrompt = `Je bent een ervaren en creatieve leerkracht voor het basisonderwijs in Nederland, expert in de 'Staal' spellingmethode. Je taak is het genereren van een compleet, printklaar en didactisch verantwoord spellingwerkblad.
-    
+
     Je volgt deze stappen:
     1.  **Genereer 15 Woorden:** Maak eerst een lijst van 15 unieke, voor de groep geschikte woorden die passen bij de opgegeven spellingcategorieën. **BELANGRIJK: Alle gegenereerde woorden moeten 100% correct gespeld zijn en voorkomen in het Nederlandse woordenboek.**
     2.  **Maak 3 Soorten Oefeningen:** Gebruik deze 15 woorden om 3 verschillende soorten oefeningen te maken. Elke oefeningsoort gebruikt 5 unieke woorden uit de lijst. Zorg dat elk woord precies één keer wordt gebruikt.
-        
-        - **Vorm 1: 'invulzinnen' (5 woorden):** Maak een zin en vervang het doelwoord door '...........' (11 puntjes).
+
+        - **Vorm 1: 'invulzinnen' (5 woorden):** Maak een **interessante, contextrijke zin** voor een basisschoolkind en vervang het doelwoord door '...........' (11 puntjes).
           **BELANGRIJKE REGELS VOOR INVULZINNEN:**
-          1.  **Duidelijke Context:** De zin moet voldoende context bevatten zodat een kind het ontbrekende woord logischerwijs kan *raden*. De zin moet minstens *twee* contextwoorden bevatten.
-          2.  **Geen Vage Zinnen:** VERBIED zinnen als 'Ik heb een ...........', 'Het ........... is mooi.', 'Ik zie een ...........', of zinnen die een simpele definitie zijn.
-          3.  **Goed Voorbeeld:** 'Een vogel bouwt een ........... in de boom.' (Context: 'vogel', 'boom').
-          4.  **Slecht Voorbeeld:** 'Dat is een ...........' (Geen context).
+          1.  **Plaatsing Placeholder:** De '...........' hoeft **NIET** aan het einde te staan. Plaats het waar het grammaticaal en logisch zinvol is.
+          2.  **Engagement:** Maak de zinnen *leuker* dan simpele feiten. Gebruik thema's zoals dieren, avontuur, school, spelletjes, fantasie.
+          3.  **Duidelijke Context:** De zin moet nog steeds voldoende context (minstens 2 woorden) bevatten zodat het kind het woord kan raden.
+          4.  **Geen Vage Zinnen:** VERBIED zinnen als 'Ik heb een ...........', 'Het ........... is mooi.', 'Ik zie een ...........', of definities.
+          5.  **Voorbeeld Interessant:** 'De dappere ridder vecht tegen de ........... met zijn zwaard.'
+          6.  **Voorbeeld Middenin:** 'In de winter draag ik een warme ........... en handschoenen.'
+          7.  **Slecht Voorbeeld:** 'Een ........... is geel.' (Te saai, geen context).
 
         - **Vorm 2: 'kies_juiste_spelling' (5 woorden):** Maak een opdracht waarbij de leerling moet kiezen tussen het correct gespelde woord en een veelvoorkomende, fonetische fout (bv. 'hond / hont', 'pauw / pau', 'geit / gijt'). Gebruik een ' / ' als scheidingsteken.
 
         - **Vorm 3: 'regelvragen' (5 woorden):** Maak een concrete vraag die de spellingstrategie test. **BELANGRIJK: De vraag MOET één van deze formats gebruiken:** "Maak het meervoud: [enkelvoudsvorm] ⟶", "Maak het langer: [verkorte vorm] ⟶", "Maak het verkleinwoord: [grondwoord] ⟶", of "Voeg samen: [deel 1] + [deel 2] ⟶". De vraag moet de leerling leiden naar het invullen van het doelwoord. Abstracte vragen over betekenis zijn STRIKT VERBODEN.
-    
+
     3.  **Lever het resultaat** als een perfect gestructureerd JSON-object. Gebruik exact dit formaat:
         \`{ "woordenlijst": [ { "woord": "voorbeeld", "categorie": 10 }, ... ], "oefeningen": { "invulzinnen": [ { "opdracht": "...", "woord": "...", "categorie": ... } ], "kies_juiste_spelling": [ { "opdracht": "Kies: ... / ...", "woord": "...", "categorie": ... } ], "regelvragen": [ { "opdracht": "...", "woord": "...", "categorie": ... } ] } }\``;
-    
+
             let jsonResponseString = await callGeminiAPI(userQuery, systemPrompt);
             let worksheetData = JSON.parse(jsonResponseString);
 
-            if (!worksheetData || !worksheetData.woordenlijst || !worksheetData.oefeningen) {
-                throw new Error("De AI gaf een onvolledig antwoord.");
+            if (!worksheetData || !worksheetData.woordenlijst || !worksheetData.oefeningen || !worksheetData.oefeningen.invulzinnen || !worksheetData.oefeningen.kies_juiste_spelling || !worksheetData.oefeningen.regelvragen) {
+                throw new Error("De AI gaf een onvolledig of incorrect geformatteerd antwoord.");
             }
-            
+
             generateBtn.innerHTML = `<i class="fas fa-spell-check mr-2"></i> Woorden worden gecontroleerd...`;
             let invalidWords = await validateWords(worksheetData.woordenlijst);
 
             if (invalidWords.length > 0) {
                 generateBtn.innerHTML = `<i class="fas fa-wand-magic-sparkles mr-2"></i> Foutjes worden hersteld...`;
-                
+
                 const invalidWordsInfo = invalidWords.map(item => ({ original: item.woord, categorie: categories[item.categorie] }));
                 const correctionQuery = `Je hebt eerder de volgende woorden gegenereerd die spelfouten bevatten: ${JSON.stringify(invalidWordsInfo)}. Geef de correcte spelling voor elk van deze woorden.`;
                 const correctionSystemPrompt = `Je bent een spellingcorrector. Je krijgt een lijst met foute woorden en hun context (categorie). Geef een JSON-object terug dat de originele foute woorden koppelt aan hun correcte spelling. Gebruik dit formaat: \`{ "correcties": [ { "origineel": "foutwoord1", "correct": "goedwoord1" }, { "origineel": "foutwoord2", "correct": "goedwoord2" } ] }\``;
-                
+
                 const correctionResponseString = await callGeminiAPI(correctionQuery, correctionSystemPrompt);
                 const correctionData = JSON.parse(correctionResponseString);
                 const corrections = correctionData.correcties;
@@ -191,21 +202,36 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 const correctionMap = new Map(corrections.map(c => [c.origineel, c.correct]));
 
+                // Update woordenlijst
                 worksheetData.woordenlijst.forEach(item => {
                     if (correctionMap.has(item.woord)) {
                         item.woord = correctionMap.get(item.woord);
                     }
                 });
 
+                // Update oefeningen: woord EN opdracht
                 Object.values(worksheetData.oefeningen).flat().forEach(ex => {
-                    if (correctionMap.has(ex.woord)) {
-                        const originalWord = ex.woord;
+                    const originalWord = ex.woord; // Bewaar het origineel voor de replace
+                    if (correctionMap.has(originalWord)) {
                         const correctedWord = correctionMap.get(originalWord);
-                        ex.woord = correctedWord;
-                        ex.opdracht = ex.opdracht.replace(new RegExp(originalWord, 'g'), correctedWord);
+                        ex.woord = correctedWord; // Update het antwoordwoord
+
+                        // Update de opdrachttekst: vervang alle instanties
+                        // We gebruiken een RegExp met 'gi' voor globale, case-insensitive vervanging
+                        // Let op: speciale RegExp-tekens in originalWord moeten mogelijk worden escaped
+                        try {
+                           const escapedOriginalWord = originalWord.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+                           const regex = new RegExp(escapedOriginalWord, 'gi');
+                           ex.opdracht = ex.opdracht.replace(regex, correctedWord);
+                        } catch (e) {
+                            console.warn("Kon woord niet vervangen in opdracht:", originalWord, correctedWord, e);
+                            // Fallback: simpele replace als RegExp faalt
+                            ex.opdracht = ex.opdracht.replace(originalWord, correctedWord);
+                        }
                     }
                 });
             }
+
 
             currentWorksheetData = worksheetData;
             // Roep de render functie aan die nu in ui-worksheet.js staat
@@ -218,6 +244,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 userMessage = "De AI-limiet voor de gratis versie is bereikt. Probeer het over een minuutje opnieuw.";
             } else if (error.message.includes("503")) {
                 userMessage = "De AI-service is momenteel overbelast. Probeer het later opnieuw.";
+            } else if (error.message.includes("onvolledig") || error.message.includes("incorrect geformatteerd")) {
+                 userMessage = "De AI gaf een onverwacht antwoord. Probeer het nog eens.";
             }
             showNotification(userMessage, true);
         } finally {
@@ -229,7 +257,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Functie voor API-aanroep
     async function callGeminiAPI(userQuery, systemPrompt) {
         const functionUrl = '/.netlify/functions/generate-words';
-        let responseText = ''; 
+        let responseText = '';
         try {
             const response = await fetch(functionUrl, {
                 method: 'POST',
@@ -242,23 +270,45 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!response.ok) {
                 let errorMsg = `Serverfout (status ${response.status})`;
                 try {
+                    // Probeer de JSON-fout te parsen, zelfs als de status niet OK is
                     const errorJson = JSON.parse(responseText);
                     if (errorJson.error && errorJson.error.message.toLowerCase().includes('quota')) {
                        throw new Error("429: Quota Exceeded");
                     }
+                     // Check specifiek voor safety filter blokkades
+                    if (errorJson.promptFeedback && errorJson.promptFeedback.blockReason) {
+                        console.error("AI verzoek geblokkeerd door safety filter:", errorJson.promptFeedback);
+                        throw new Error(`Het verzoek is geblokkeerd door het veiligheidsfilter (${errorJson.promptFeedback.blockReason}). Probeer andere categorieën.`);
+                    }
                     errorMsg = errorJson.error ? errorJson.error.message : responseText;
                 } catch (e) {
-                     errorMsg = responseText || errorMsg;
+                     // Als parsen mislukt, gebruik de ruwe tekst (tenzij het al een error is)
+                     if (!(e instanceof Error && e.message.startsWith("429"))) {
+                         errorMsg = responseText || errorMsg;
+                     } else {
+                         throw e; // Gooi de 429 error opnieuw
+                     }
                 }
                 throw new Error(errorMsg);
             }
+
+             // Extra controle: is de responseText wel geldige JSON?
+             try {
+                JSON.parse(responseText);
+             } catch(e) {
+                console.error("AI gaf geen geldige JSON terug:", responseText);
+                throw new Error("De AI gaf een onverwacht (niet-JSON) antwoord.");
+             }
+
             return responseText;
 
         } catch (error) {
             console.error("Fout bij het aanroepen van de Netlify Function:", error);
+            // Gooi de error door zodat de generateWorksheetWithAI functie het kan afhandelen
             throw error;
         }
     }
+
 
     // Functies die globaal beschikbaar moeten zijn (voor knoppen in de HTML)
     window.generateStory = async function() {
@@ -273,16 +323,16 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const wordList = currentWorksheetData.woordenlijst.map(item => item.woord);
             if (wordList.length === 0) throw new Error("Geen woorden om een verhaal te maken.");
-            
+
             const groupDisplay = currentGroup === '7' ? '7 of 8' : currentGroup;
             const userPrompt = `Schrijf een heel kort, grappig en eenvoudig verhaaltje in het Nederlands voor een kind in groep ${groupDisplay}. Het verhaal moet de volgende woorden bevatten: ${wordList.join(', ')}. Maak de woorden uit de lijst dikgedrukt in de tekst door ze te omringen met **. Zorg ervoor dat het verhaal logisch en makkelijk te lezen is.`;
             const systemPrompt = `Je bent een creatieve kinderboekenschrijver. Schrijf een kort, positief en grappig verhaal. Geef je antwoord als JSON object met een "story" key.`;
-            
+
             const jsonResponseString = await callGeminiAPI(userPrompt, systemPrompt);
-            const storyText = JSON.parse(jsonResponseString).story || jsonResponseString; 
+            const storyText = JSON.parse(jsonResponseString).story || jsonResponseString;
 
             if (!storyText) throw new Error("Kon geen verhaal genereren.");
-            
+
             const formattedStory = storyText.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>');
             const storyOutput = document.getElementById('story-output');
             storyOutput.innerHTML = `<p>${formattedStory}</p>`;
