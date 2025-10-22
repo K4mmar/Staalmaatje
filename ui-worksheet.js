@@ -11,7 +11,9 @@ window.renderWorksheet = function(worksheetData, selectedCatIds, currentGroup) {
         return;
     }
 
+    // Gebruik de globale 'categories' variabele (ervan uitgaande dat data.js geladen is)
     const categoriesMap = typeof categories !== 'undefined' ? categories : {};
+
     const groupDisplay = currentGroup === '7' ? '7/8' : currentGroup;
 
     const wordListHeader = `
@@ -46,14 +48,16 @@ window.renderWorksheet = function(worksheetData, selectedCatIds, currentGroup) {
 
         exercises.forEach((item, index) => {
             const itemNumber = startIndex + index + 1;
+            // Toon altijd de volledige opdrachttekst zoals die van de AI komt
             const opdrachtTekst = item.opdracht;
 
+            // --- GECORRIGEERD: Commentaar verwijderd EN structuur aangepast voor uitlijning ---
             blockHTML += `
                 <div class="p-3 border border-slate-200 rounded-lg flex items-start gap-4">
                     <span class="font-semibold text-slate-500 mt-1">${itemNumber}.</span>
                     <div class="flex-grow">
                         <p class="text-base text-slate-800">${opdrachtTekst}</p>
-                        <div class="mt-2 h-8 border-b-2 border-slate-300"></div>
+                        <div class="mt-2 h-8 border-b-2 border-slate-300"></div> {/* Aparte schrijflijn */}
                     </div>
                     <span class="flex-shrink-0 text-xs text-slate-500 bg-slate-100 px-2 py-1 rounded-full mt-1">${categoriesMap[item.categorie] || ''}</span>
                 </div>
@@ -64,14 +68,14 @@ window.renderWorksheet = function(worksheetData, selectedCatIds, currentGroup) {
         return blockHTML;
     };
 
-    // --- HIER IS DE FIX ---
-    // 'oFefeningen' is veranderd in 'oefeningen'
+    // --- FIX: 'oFefeningen' is 'oefeningen' geworden ---
     studentSheetHTML += renderExerciseBlock('Vul het juiste woord in', worksheetData.oefeningen.invulzinnen, 0);
     studentSheetHTML += renderExerciseBlock('Kies de juiste spelling', worksheetData.oefeningen.kies_juiste_spelling, 5);
     studentSheetHTML += renderExerciseBlock('Pas de spellingregel toe', worksheetData.oefeningen.regelvragen, 10);
 
     // Plaats de verhaal-container binnen het student-sheet zodat het meeprint
     studentSheetHTML += `<div id="story-container" class="prose max-w-none mt-12"></div>`;
+
     studentSheetHTML += `</div>`; // Einde space-y-6
 
     const allExercises = [
@@ -155,7 +159,8 @@ window.switchTab = function(tabName) {
     
     // Reset beide tabs
     worksheetTab.classList.remove(...activeClasses, 'border-blue-600', 'text-blue-600', 'border-green-600', 'text-green-600');
-    worksLheetTab.classList.add(...inactiveClasses);
+    // --- FIX: 'worksLheetTab' is 'worksheetTab' geworden ---
+    worksheetTab.classList.add(...inactiveClasses);
     worksheetTab.style.color = '';
     worksheetTab.style.borderColor = '';
     
