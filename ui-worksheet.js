@@ -3,6 +3,26 @@
 // Deze functie is verantwoordelijk voor het omzetten van de data naar HTML.
 // ===================================================================================
 
+// Functie om te wisselen tussen tabbladen
+window.switchTab = function(tabName) {
+    const studentPanel = document.getElementById('tab-panel-student');
+    const answerPanel = document.getElementById('tab-panel-answer');
+    const studentBtn = document.getElementById('tab-btn-student');
+    const answerBtn = document.getElementById('tab-btn-answer');
+
+    if (tabName === 'student') {
+        studentPanel.classList.remove('hidden');
+        answerPanel.classList.add('hidden');
+        studentBtn.classList.add('active-tab-btn');
+        answerBtn.classList.remove('active-tab-btn');
+    } else {
+        studentPanel.classList.add('hidden');
+        answerPanel.classList.remove('hidden');
+        studentBtn.classList.remove('active-tab-btn');
+        answerBtn.classList.add('active-tab-btn');
+    }
+}
+
 // Functie om het werkblad te renderen (maak hem globaal beschikbaar)
 window.renderWorksheet = function(worksheetData, selectedCatIds, currentGroup) {
     const worksheetOutput = document.getElementById('worksheet-output');
@@ -57,7 +77,7 @@ window.renderWorksheet = function(worksheetData, selectedCatIds, currentGroup) {
                         <span class="font-semibold text-gray-500 mt-1">${itemNumber}.</span>
                         <div class="flex-grow">
                             <p class="text-base">${opdrachtTekst}</p>
-                            <div class="mt-2 h-8 border-b-2 border-gray-300"></div> {/* Aparte schrijflijn */}
+                            <div class="mt-2 h-8 border-b-2 border-gray-300"></div> <!-- Aparte schrijflijn -->
                         </div>
                     </div>
                     <span class="text-xs text-gray-400 bg-gray-100 px-2 py-1 rounded-full mt-1 flex-shrink-0">${categoriesMap[item.categorie] || ''}</span>
@@ -146,28 +166,6 @@ window.renderWorksheet = function(worksheetData, selectedCatIds, currentGroup) {
             </div>
 
         </div>
-
-        <!-- Script voor tabbladen (inline) -->
-        <script class="no-print">
-        function switchTab(tabName) {
-            const studentPanel = document.getElementById('tab-panel-student');
-            const answerPanel = document.getElementById('tab-panel-answer');
-            const studentBtn = document.getElementById('tab-btn-student');
-            const answerBtn = document.getElementById('tab-btn-answer');
-
-            if (tabName === 'student') {
-                studentPanel.classList.remove('hidden');
-                answerPanel.classList.add('hidden');
-                studentBtn.classList.add('active-tab-btn');
-                answerBtn.classList.remove('active-tab-btn');
-            } else {
-                studentPanel.classList.add('hidden');
-                answerPanel.classList.remove('hidden');
-                studentBtn.classList.remove('active-tab-btn');
-                answerBtn.classList.add('active-tab-btn');
-            }
-        }
-        </script>
 
         <!-- Stijlen voor tabbladen (inline) -->
         <style>
