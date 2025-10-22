@@ -32,10 +32,22 @@
         </header>
 
         <!-- .no-print HIER TOEGEVOEGD -->
-        <main id="main-content" class="mt-8 grid grid-cols-1 md:grid-cols-3 gap-8 no-print">
+        <!-- GEWIJZIGD: md:grid-cols-2 (was 3) voor 50/50 balans -->
+        <main id="main-content" class="mt-8 grid grid-cols-1 md:grid-cols-2 gap-8 no-print">
             
-            <!-- Linker kolom: Menu -->
-            <div id="new-panel" class="md:col-span-2 space-y-6">
+            <!-- Rechter kolom: Logo / Welkom (NU EERST IN HTML VOOR MOBIEL) -->
+            <!-- GEWIJZIGD: md:order-2 toegevoegd om rechts te plaatsen op desktop -->
+            <div id="welcome-panel" class="md:col-span-1 md:order-2">
+                <div class="bg-white p-6 rounded-2xl shadow-lg flex flex-col items-center text-center">
+                    <img src="images/logo.png" alt="Staalmaatje Logo" class="w-48 h-48 object-contain">
+                    <h2 class="text-2xl font-bold text-slate-800 mt-4">Welkom bij Staalmaatje</h2>
+                    <p class="text-slate-600 mt-1">Stel hier je eigen spellingwerkblad samen.</p>
+                </div>
+            </div>
+
+            <!-- Linker kolom: Menu (NU TWEEDE IN HTML, EERST OP DESKTOP) -->
+            <!-- GEWIJZIGD: md:col-span-1 (was 2) en md:order-1 toegevoegd -->
+            <div id="new-panel" class="md:col-span-1 space-y-6 md:order-1">
                 <!-- Selectie paneel -->
                 <div class="bg-white p-6 rounded-2xl shadow-lg">
                     <div class="space-y-6">
@@ -64,17 +76,9 @@
                 </div>
             </div>
 
-            <!-- Rechter kolom: Logo / Welkom -->
-            <div id="welcome-panel" class="md:col-span-1">
-                <div class="bg-white p-6 rounded-2xl shadow-lg flex flex-col items-center text-center">
-                    <img src="images/logo.png" alt="Staalmaatje Logo" class="w-48 h-48 object-contain">
-                    <h2 class="text-2xl font-bold text-slate-800 mt-4">Welkom bij Staalmaatje</h2>
-                    <p class="text-slate-600 mt-1">Stel hier je eigen spellingwerkblad samen.</p>
-                </div>
-            </div>
-
             <!-- Geschiedenis Paneel (verborgen) -->
-            <div id="archive-panel" class="md:col-span-3 hidden">
+            <!-- GEWIJZIGD: md:col-span-2 (was 3) om op het 2-koloms grid te passen -->
+            <div id="archive-panel" class="md:col-span-2 hidden">
                 <div class="bg-white p-6 rounded-2xl shadow-lg">
                     <div class="flex justify-between items-center mb-4">
                         <h2 class="text-2xl font-bold text-slate-800">Opgeslagen Werkbladen</h2>
