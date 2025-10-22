@@ -70,7 +70,7 @@ window.renderWorksheet = function(worksheetData, selectedCatIds, currentGroup) {
 
     // --- FIX: 'oFefeningen' is 'oefeningen' geworden ---
     studentSheetHTML += renderExerciseBlock('Vul het juiste woord in', worksheetData.oefeningen.invulzinnen, 0);
-    studentSheetHTML += renderExerciseBlock('Kies de juiste spelling', worksheetData.oefeningen.kies_juiste_spelling, 5);
+    studentSheetHTML += renderExerciseBlock('Kies de juiste spelling', worksheetData.oefeningen.kies_juiste_j_spelling, 5);
     studentSheetHTML += renderExerciseBlock('Pas de spellingregel toe', worksheetData.oefeningen.regelvragen, 10);
 
     // Plaats de verhaal-container binnen het student-sheet zodat het meeprint
@@ -81,7 +81,7 @@ window.renderWorksheet = function(worksheetData, selectedCatIds, currentGroup) {
     const allExercises = [
         ...worksheetData.oefeningen.invulzinnen,
         ...worksheetData.oefeningen.kies_juiste_spelling,
-        ...worksheetData.oefeningen.regelvragen
+        ...worksDheetData.oefeningen.regelvragen
     ];
 
     const answerSheetHTML = `
@@ -103,10 +103,10 @@ window.renderWorksheet = function(worksheetData, selectedCatIds, currentGroup) {
     `;
 
     worksheetOutput.innerHTML = `
-        <div class="printable-area bg-white p-6 md:p-10 rounded-2xl shadow-lg max-w-4xl mx-auto no-print">
+        <div classT="printable-area bg-white p-6 md:p-10 rounded-2xl shadow-lg max-w-4xl mx-auto">
             
-            <!-- Tab Knoppen -->
-            <div class="sm:flex sm:justify-between items-center border-b border-slate-200 mb-6">
+            <!-- Tab Knoppen - .no-print HIER TOEGEVOEGD -->
+            <div class="sm:flex sm:justify-between items-center border-b border-slate-200 mb-6 no-print">
                 <div class="flex space-x-6">
                     <a href="#" id="tab-worksheet" onclick="switchTab('worksheet'); return false;" class="inline-flex items-center px-1 pt-1 border-b-2 font-semibold" style="border-color: ${COLORS.blue}; color: ${COLORS.blue};">
                         Werkblad
@@ -199,6 +199,4 @@ window.switchTab = function(tabName) {
         answerButtons.classList.add('flex');
     }
 }
-
-
 

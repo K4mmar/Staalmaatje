@@ -7,101 +7,105 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap');
-        body { font-family: 'Poppins', sans-serif; }
+        @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;800&display=swap');
+        body { font-family: 'Nunito', sans-serif; }
     </style>
 </head>
 <body class="bg-slate-50">
 
-    <div id="app" class="container mx-auto px-4 py-6">
-        
-        <!-- Nieuwe Top Navigatie -->
-        <nav class="bg-white shadow-sm rounded-xl mb-8">
-            <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-                <div class="flex h-16 justify-between items-center">
-                    <!-- Gekleurde Titel -->
-                    <div class="flex-shrink-0">
-                        <span class="text-2xl font-bold" style="color: #2073af;">STAAL</span><span class="text-2xl font-bold" style="color: #a8c641;">maatje</span>
-                    </div>
-                    <!-- Hoofd Tabs -->
-                    <div class="flex space-x-6">
-                        <a href="#" id="new-worksheet-tab" class="inline-flex items-center border-b-2 px-1 pt-1 text-sm font-semibold border-blue-600 text-blue-600" style="color: #2073af; border-color: #2073af;">
-                            Nieuw
-                        </a>
-                        <a href="#" id="history-tab" class="inline-flex items-center border-b-2 border-transparent px-1 pt-1 text-sm font-semibold text-slate-500 hover:border-slate-300 hover:text-slate-700">
-                            Archief
-                        </a>
-                    </div>
+    <!-- .no-print is verwijderd van #app -->
+    <div id="app" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+        <!-- .no-print HIER TOEGEVOEGD -->
+        <header class="bg-white shadow-sm rounded-lg p-4 no-print">
+            <nav class="flex justify-between items-center">
+                <div>
+                    <h1 class="text-2xl font-extrabold">
+                        <span style="color: #2073af;">STAAL</span><span style="color: #a8c641;">maatje</span>
+                    </h1>
                 </div>
-            </div>
-        </nav>
-
-        <!-- Inhoud (Nieuw vs Archief) -->
-
-        <!-- Tab Inhoud: Nieuw Werkblad (2-koloms layout) -->
-        <div id="new-worksheet-panel">
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-12 items-center max-w-6xl mx-auto">
-                
-                <!-- Rechterkolom (Logo) - Wordt 1e op mobiel -->
-                <div class="order-1 md:order-2 text-center">
-                    <img class="h-64 w-auto mx-auto" src="images/logo.png" alt="Staalmaatje Logo">
-                    <h1 class="text-3xl md:text-4xl font-bold text-slate-800 mt-4">Welkom bij Staalmaatje</h1>
-                    <p class="text-slate-600 mt-2 text-lg">Stel hier je eigen spellingwerkblad samen.</p>
+                <div class="flex space-x-2">
+                    <button id="tab-new" class="px-4 py-2 rounded-md font-semibold text-sm" style="color: #2073af; box-shadow: inset 0 -2px 0 0 #2073af;">Nieuw</button>
+                    <button id="tab-archive" class="px-4 py-2 rounded-md font-semibold text-sm text-slate-600 hover:text-slate-900">Archief</button>
                 </div>
+            </nav>
+        </header>
 
-                <!-- Linkerkolom (Menu) - Wordt 2e op mobiel -->
-                <div class="order-2 md:order-1">
-                    <div class="bg-white p-6 rounded-2xl shadow-lg no-print">
-                        <div class="space-y-6">
-                            <div>
-                                <label class="block text-lg font-semibold mb-3 text-slate-700">1. Kies je groep</label>
-                                <div id="group-buttons" class="flex flex-wrap gap-2">
-                                    <!-- Groep knoppen worden hier door JS ingevoegd -->
-                                </div>
-                            </div>
-        
-                            <div id="category-selection"> <!-- 'hidden' class verwijderd -->
-                                <h3 class="text-lg font-semibold mb-3 text-slate-700">2. Kies categorieën (max. 3)</h3>
-                                <div id="category-list" class="max-h-48 overflow-y-auto bg-slate-50 p-3 rounded-lg border border-slate-200">
-                                    <!-- Categorie checkboxes worden hier door JS ingevoegd -->
-                                </div>
+        <!-- .no-print HIER TOEGEVOEGD -->
+        <main id="main-content" class="mt-8 grid grid-cols-1 md:grid-cols-3 gap-8 no-print">
+            
+            <!-- Linker kolom: Menu -->
+            <div id="new-panel" class="md:col-span-2 space-y-6">
+                <!-- Selectie paneel -->
+                <div class="bg-white p-6 rounded-2xl shadow-lg">
+                    <div class="space-y-6">
+                        <div>
+                            <label class="block text-lg font-semibold mb-3 text-slate-700">1. Kies je groep</label>
+                            <div id="group-buttons" class="flex flex-wrap gap-2">
+                                <!-- Groep knoppen worden hier door JS ingevoegd -->
                             </div>
                         </div>
-                        
-                        <div id="generate-button-container" class="text-center mt-8"> <!-- 'hidden' class verwijderd -->
-                            <button id="generate-btn" class="w-full text-white font-bold py-3 px-8 rounded-full text-lg transition-all transform hover:scale-105 shadow-lg" style="background-color: #f19127;">
-                                <i class="fas fa-magic mr-2"></i> Maak Werkblad
-                            </button>
+
+                        <!-- Categorieën zijn nu standaard zichtbaar -->
+                        <div id="category-selection">
+                            <h3 class="text-lg font-semibold mb-3 text-slate-700">2. Kies categorieën (max. 3)</h3>
+                            <div id="category-list" class="max-h-60 overflow-y-auto bg-slate-50 p-4 rounded-lg border border-slate-200 space-y-2">
+                                <!-- Categorie checkboxes worden hier door JS ingevoegd -->
+                            </div>
                         </div>
                     </div>
-                </div>
-
-            </div>
-        </div>
-
-        <!-- Tab Inhoud: Opgeslagen Werkbladen (standaard verborgen) -->
-        <div id="history-panel" class="hidden">
-            <div class="bg-white p-6 rounded-2xl shadow-lg mb-8 max-w-4xl mx-auto no-print">
-                <div class="flex justify-between items-center mb-4">
-                    <h2 class="text-xl font-semibold text-slate-700">Opgeslagen Werkbladen (max. 10)</h2>
-                    <button id="clear-history-btn" class="text-sm text-white font-semibold py-2 px-4 rounded-full transition-transform transform hover:scale-105 hidden" style="background-color: #64748b;">
-                        <i class="fas fa-trash-alt mr-2"></i> Alles Wissen
-                    </button>
-                </div>
-                <div id="history-list" class="space-y-3">
-                    <!-- Geschiedenis wordt hier door JS ingevoegd -->
+                    
+                    <!-- Knop is nu standaard zichtbaar -->
+                    <div id="generate-button-container" class="text-left mt-8">
+                        <button id="generate-btn" class="font-bold py-3 px-8 rounded-full text-lg text-white transition-all transform hover:scale-105 shadow-lg flex items-center justify-center gap-2" style="background-color: #f19127;">
+                            <i class="fas fa-magic"></i> Maak Werkblad
+                        </button>
+                    </div>
                 </div>
             </div>
-        </div>
 
+            <!-- Rechter kolom: Logo / Welkom -->
+            <div id="welcome-panel" class="md:col-span-1">
+                <div class="bg-white p-6 rounded-2xl shadow-lg flex flex-col items-center text-center">
+                    <img src="images/logo.png" alt="Staalmaatje Logo" class="w-48 h-48 object-contain">
+                    <h2 class="text-2xl font-bold text-slate-800 mt-4">Welkom bij Staalmaatje</h2>
+                    <p class="text-slate-600 mt-1">Stel hier je eigen spellingwerkblad samen.</p>
+                </div>
+            </div>
 
-        <!-- Werkblad Output -->
-        <div id="worksheet-output" class="mt-12">
+            <!-- Geschiedenis Paneel (verborgen) -->
+            <div id="archive-panel" class="md:col-span-3 hidden">
+                <div class="bg-white p-6 rounded-2xl shadow-lg">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-2xl font-bold text-slate-800">Opgeslagen Werkbladen</h2>
+                        <button id="clear-history-btn" class="text-sm text-red-600 hover:text-red-800 font-semibold">
+                            <i class="fas fa-trash-alt mr-1"></i> Alles wissen
+                        </button>
+                    </div>
+                    <div id="history-list" class="space-y-3">
+                        <!-- Geschiedenis wordt hier geladen -->
+                    </div>
+                </div>
+            </div>
+
+        </main>
+        
+        <!-- Werkblad output (deze moet WEL printen) -->
+        <div id="worksheet-output" class="mt-8">
             <!-- Werkblad wordt hier door JS gegenereerd -->
         </div>
+
     </div>
 
     <!-- Scripts -->
+    <script>
+        // Kleuren globaal beschikbaar maken voor scripts
+        const COLORS = {
+            blue: '#2073af',
+            green: '#a8c641',
+            orange: '#f19127'
+        };
+    </script>
     <script src="data.js"></script>
     <script src="ui-worksheet.js"></script>
     <script src="main.js"></script>
