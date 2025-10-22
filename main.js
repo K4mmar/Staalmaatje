@@ -425,7 +425,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (typeof renderWorksheet === 'function') {
                 renderWorksheet(entry.data, entry.selectedCatIds, entry.group);
                 // Spring terug naar de 'Nieuw Werkblad' tab om het resultaat te tonen
-                newTab.click();
+                // newTab.click(); // <-- DEZE REGEL IS VERWIJDERD
             } else {
                 showNotification("Fout bij het laden van het werkblad.", true);
             }
@@ -551,4 +551,5 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
 });
+
 
