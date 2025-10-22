@@ -74,18 +74,20 @@ document.addEventListener('DOMContentLoaded', () => {
     // Categorieën weergeven op basis van groep
     function displayCategories(group) {
         categoryList.innerHTML = '';
-        const cats = groupCategories[group];
+        // Gebruik de groupCategories uit data.js (ervan uitgaande dat die geladen is)
+        const cats = typeof groupCategories !== 'undefined' ? groupCategories[group] : [];
         if (!cats) return;
         cats.forEach(catId => {
             const div = document.createElement('div');
             div.className = 'flex items-center';
             div.innerHTML = `
                 <input id="cat-${catId}" type="checkbox" data-cat-id="${catId}" class="h-4 w-4 rounded border-gray-300 text-pink-600 focus:ring-pink-500">
-                <label for="cat-${catId}" class="ml-3 block text-sm text-gray-700">${catId}. ${categories[catId]}</label>
+                <label for="cat-${catId}" class="ml-3 block text-sm text-gray-700">${catId}. ${categories[catId] || 'Onbekend'}</label>
             `;
             categoryList.appendChild(div);
         });
     }
+
 
     // Maximaal 3 categorieën selecteren
     categoryList.addEventListener('change', (e) => {
@@ -119,10 +121,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (!response.ok && response.status === 404) {
                     return { ...item, isValid: false };
                 }
-                // Check of er definities zijn (soms geeft 200 OK maar geen inhoud)
                 const data = await response.json();
                 if (!data.nl || data.nl.length === 0) {
-                   // Probeer fallback naar Dictionary API
                    console.warn(`Wiktionary gaf geen definitie voor "${word}", fallback naar DictionaryAPI.`);
                    const fallbackResponse = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/nl/${encodeURIComponent(word)}`);
                    if (!fallbackResponse.ok && fallbackResponse.status === 404) {
@@ -132,7 +132,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 return { ...item, isValid: true };
             } catch (error) {
                 console.warn(`Kon woord "${word}" niet valideren, we gaan uit van het goede.`, error);
-                return { ...item, isValid: true }; // Fallback: ga ervan uit dat het goed is als API's falen
+                return { ...item, isValid: true };
             }
         });
 
@@ -146,12 +146,14 @@ document.addEventListener('DOMContentLoaded', () => {
         generateBtn.innerHTML = `<i class="fas fa-spinner fa-spin mr-2"></i> Woorden worden bedacht...`;
 
         try {
-            const geselecteerdeRegels = spellingRegels.filter(regel => selectedCatIds.includes(regel.id));
+            // Gebruik spellingRegels uit data.js
+            const geselecteerdeRegels = typeof spellingRegels !== 'undefined'
+                ? spellingRegels.filter(regel => selectedCatIds.includes(regel.id))
+                : [];
             const groupDisplay = currentGroup === '7' ? '7 of 8' : currentGroup;
 
             const userQuery = `Genereer een spellingwerkblad voor groep ${groupDisplay} op basis van deze regels: ${JSON.stringify(geselecteerdeRegels, null, 2)}`;
 
-            // --- AANGEPAST: Nog specifiekere instructies voor de 'invulzinnen' ---
             const systemPrompt = `Je bent een ervaren en creatieve leerkracht voor het basisonderwijs in Nederland, expert in de 'Staal' spellingmethode. Je taak is het genereren van een compleet, printklaar en didactisch verantwoord spellingwerkblad.
 
     Je volgt deze stappen:
@@ -202,30 +204,23 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 const correctionMap = new Map(corrections.map(c => [c.origineel, c.correct]));
 
-                // Update woordenlijst
                 worksheetData.woordenlijst.forEach(item => {
                     if (correctionMap.has(item.woord)) {
                         item.woord = correctionMap.get(item.woord);
                     }
                 });
 
-                // Update oefeningen: woord EN opdracht
                 Object.values(worksheetData.oefeningen).flat().forEach(ex => {
-                    const originalWord = ex.woord; // Bewaar het origineel voor de replace
+                    const originalWord = ex.woord;
                     if (correctionMap.has(originalWord)) {
                         const correctedWord = correctionMap.get(originalWord);
-                        ex.woord = correctedWord; // Update het antwoordwoord
-
-                        // Update de opdrachttekst: vervang alle instanties
-                        // We gebruiken een RegExp met 'gi' voor globale, case-insensitive vervanging
-                        // Let op: speciale RegExp-tekens in originalWord moeten mogelijk worden escaped
+                        ex.woord = correctedWord;
                         try {
                            const escapedOriginalWord = originalWord.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
                            const regex = new RegExp(escapedOriginalWord, 'gi');
                            ex.opdracht = ex.opdracht.replace(regex, correctedWord);
                         } catch (e) {
                             console.warn("Kon woord niet vervangen in opdracht:", originalWord, correctedWord, e);
-                            // Fallback: simpele replace als RegExp faalt
                             ex.opdracht = ex.opdracht.replace(originalWord, correctedWord);
                         }
                     }
@@ -235,7 +230,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
             currentWorksheetData = worksheetData;
             // Roep de render functie aan die nu in ui-worksheet.js staat
-            renderWorksheet(worksheetData, selectedCatIds, currentGroup);
+            // Controleer of de functie bestaat voordat je hem aanroept
+            if (typeof renderWorksheet === 'function') {
+                renderWorksheet(worksheetData, selectedCatIds, currentGroup);
+            } else {
+                console.error("renderWorksheet functie niet gevonden. Is ui-worksheet.js correct geladen?");
+                 showNotification("Fout bij het weergeven van het werkblad.", true);
+            }
 
         } catch (error) {
             console.error("Fout bij genereren van AI werkblad:", error);
@@ -244,8 +245,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 userMessage = "De AI-limiet voor de gratis versie is bereikt. Probeer het over een minuutje opnieuw.";
             } else if (error.message.includes("503")) {
                 userMessage = "De AI-service is momenteel overbelast. Probeer het later opnieuw.";
-            } else if (error.message.includes("onvolledig") || error.message.includes("incorrect geformatteerd")) {
+            } else if (error.message.includes("onvolledig") || error.message.includes("incorrect geformatteerd") || error.message.includes("niet-JSON")) {
                  userMessage = "De AI gaf een onverwacht antwoord. Probeer het nog eens.";
+            } else if (error.message.includes("veiligheidsfilter")) {
+                userMessage = error.message; // Geef specifieke melding door
             }
             showNotification(userMessage, true);
         } finally {
@@ -270,29 +273,25 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!response.ok) {
                 let errorMsg = `Serverfout (status ${response.status})`;
                 try {
-                    // Probeer de JSON-fout te parsen, zelfs als de status niet OK is
                     const errorJson = JSON.parse(responseText);
                     if (errorJson.error && errorJson.error.message.toLowerCase().includes('quota')) {
                        throw new Error("429: Quota Exceeded");
                     }
-                     // Check specifiek voor safety filter blokkades
                     if (errorJson.promptFeedback && errorJson.promptFeedback.blockReason) {
                         console.error("AI verzoek geblokkeerd door safety filter:", errorJson.promptFeedback);
                         throw new Error(`Het verzoek is geblokkeerd door het veiligheidsfilter (${errorJson.promptFeedback.blockReason}). Probeer andere categorieën.`);
                     }
                     errorMsg = errorJson.error ? errorJson.error.message : responseText;
                 } catch (e) {
-                     // Als parsen mislukt, gebruik de ruwe tekst (tenzij het al een error is)
-                     if (!(e instanceof Error && e.message.startsWith("429"))) {
+                     if (!(e instanceof Error && (e.message.startsWith("429") || e.message.includes("veiligheidsfilter")))) {
                          errorMsg = responseText || errorMsg;
                      } else {
-                         throw e; // Gooi de 429 error opnieuw
+                         throw e;
                      }
                 }
                 throw new Error(errorMsg);
             }
 
-             // Extra controle: is de responseText wel geldige JSON?
              try {
                 JSON.parse(responseText);
              } catch(e) {
@@ -304,7 +303,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
         } catch (error) {
             console.error("Fout bij het aanroepen van de Netlify Function:", error);
-            // Gooi de error door zodat de generateWorksheetWithAI functie het kan afhandelen
             throw error;
         }
     }
@@ -348,6 +346,9 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    // --- AANGEPAST: Deze functies horen nu bij ui-worksheet.js, maar moeten globaal zijn ---
+    // Zorg ervoor dat ui-worksheet.js deze functies definieert en aan window koppelt,
+    // of zet ze hier en zorg dat ui-worksheet.js ze niet opnieuw definieert.
     window.printStudentWorksheet = function() {
         document.body.classList.remove('print-answer-sheet');
         document.body.classList.add('print-student-sheet');
