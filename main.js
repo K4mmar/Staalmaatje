@@ -426,10 +426,15 @@ document.addEventListener('DOMContentLoaded', () => {
             const title = `Groep ${entry.groupDisplay} - ${entry.categories.map(c => categories[c] || '...').join(', ')}`;
             const date = new Date(entry.timestamp).toLocaleString('nl-NL', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
             return `
-                <button data-history-id="${entry.id}" class="load-history-btn w-full text-left p-3 bg-gray-50 border border-gray-200 rounded-lg hover:bg-pink-50 hover:border-pink-300 transition">
-                    <span class="font-semibold text-gray-800 block">${title}</span>
-                    <span class="text-sm text-gray-500">${date}</span>
-                </button>
+                <div class="flex justify-between items-center p-3 bg-gray-50 border border-gray-200 rounded-lg hover:bg-pink-50 hover:border-pink-300 transition group">
+                    <button data-history-id="${entry.id}" class="load-history-btn w-full text-left">
+                        <span class="font-semibold text-gray-800 block group-hover:text-pink-700">${title}</span>
+                        <span class="text-sm text-gray-500">${date}</span>
+                    </button>
+                    <button data-delete-id="${entry.id}" class="delete-history-item-btn flex-shrink-0 p-2 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-100 z-10 relative">
+                        <i class="fas fa-trash-alt"></i>
+                    </button>
+                </div>
             `;
         }).join('');
     }
@@ -474,6 +479,19 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    // NIEUW: Verwijder een specifiek werkblad uit de geschiedenis
+    function deleteWorksheetFromHistory(id) {
+        let history = getHistory();
+        const originalLength = history.length;
+        history = history.filter(entry => entry.id !== id);
+
+        if (history.length < originalLength) {
+            localStorage.setItem('worksheetHistory', JSON.stringify(history));
+            renderHistoryList(); // Refresh the list
+            showNotification("Werkblad verwijderd uit geschiedenis.");
+        }
+    }
+
     // Wis de geschiedenis
     clearHistoryBtn.addEventListener('click', () => {
         localStorage.removeItem('worksheetHistory');
@@ -483,9 +501,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Event listener voor het klikken op een geschiedenis-item
     historyList.addEventListener('click', (e) => {
-        const targetButton = e.target.closest('.load-history-btn');
-        if (targetButton && targetButton.dataset.historyId) {
-            loadWorksheetFromHistory(targetButton.dataset.historyId);
+        const loadButton = e.target.closest('.load-history-btn');
+        const deleteButton = e.target.closest('.delete-history-item-btn');
+
+        if (deleteButton && deleteButton.dataset.deleteId) {
+            // Stop de event-bubbling zodat het werkblad niet ook geladen wordt
+            e.stopPropagation(); 
+            deleteWorksheetFromHistory(deleteButton.dataset.deleteId);
+        } else if (loadButton && loadButton.dataset.historyId) {
+            loadWorksheetFromHistory(loadButton.dataset.historyId);
         }
     });
 
@@ -571,4 +595,5 @@ document.addEventListener('DOMContentLoaded', () => {
         window.print();
     }
 });
+
 
