@@ -157,19 +157,25 @@ document.addEventListener('DOMContentLoaded', () => {
             // --- AANGEPAST: Placeholder veranderd naar '...' ---
             const systemPrompt = `Je bent een ervaren en creatieve leerkracht voor het basisonderwijs in Nederland, expert in de 'Staal' spellingmethode. Je taak is het genereren van een compleet, printklaar en didactisch verantwoord spellingwerkblad.
 
+    **BELANGRIJKSTE REGEL:** De complexiteit van *alle* zinnen en opdrachten moet **strikt** aansluiten bij de opgegeven groep.
+    * **Groep 4:** Gebruik uitsluitend zeer eenvoudige, korte zinnen (onderwerp-werkwoord-voorwerp, max 8-10 woorden).
+    * **Groep 5/6:** Zinnen mogen iets langer zijn, maar de focus blijft op eenvoudige taal.
+    * **Groep 7/8:** Zinnen mogen complexer zijn, maar de focus ligt altijd op spelling, niet op leesbegrip.
+
     Je volgt deze stappen:
     1.  **Genereer 15 Woorden:** Maak eerst een lijst van 15 unieke, voor de groep geschikte woorden die passen bij de opgegeven spellingcategorieën. **BELANGRIJK: Alle gegenereerde woorden moeten 100% correct gespeld zijn en voorkomen in het Nederlandse woordenboek.**
     2.  **Maak 3 Soorten Oefeningen:** Gebruik deze 15 woorden om 3 verschillende soorten oefeningen te maken. Elke oefeningsoort gebruikt 5 unieke woorden uit de lijst. Zorg dat elk woord precies één keer wordt gebruikt.
 
-        - **Vorm 1: 'invulzinnen' (5 woorden):** Maak een **interessante, contextrijke zin** voor een basisschoolkind en vervang het doelwoord door '...' (drie puntjes).
+        - **Vorm 1: 'invulzinnen' (5 woorden):** Maak een **contextrijke zin** die **eenvoudig genoeg is voor de geselecteerde groep** en vervang het doelwoord door '...' (drie puntjes).
           **BELANGRIJKE REGELS VOOR INVULZINNEN:**
-          1.  **Plaatsing Placeholder:** De '...' hoeft **NIET** aan het einde te staan. Plaats het waar het grammaticaal en logisch zinvol is.
-          2.  **Engagement:** Maak de zinnen *leuker* dan simpele feiten. Gebruik thema's zoals dieren, avontuur, school, spelletjes, fantasie.
-          3.  **Duidelijke Context:** De zin moet nog steeds voldoende context (minstens 2 woorden) bevatten zodat het kind het woord kan raden.
-          4.  **Geen Vage Zinnen:** VERBIED zinnen als 'Ik heb een ...', 'Het ... is mooi.', 'Ik zie een ...', of definities.
-          5.  **Voorbeeld Interessant:** 'De dappere ridder vecht tegen de ... met zijn zwaard.'
-          6.  **Voorbeeld Middenin:** 'In de winter draag ik een warme ... en handschoenen.'
-          7.  **Slecht Voorbeeld:** 'Een ... is geel.' (Te saai, geen context).
+          1.  **Niveau-aanpassing (CRUCIAAL):** De zin *moet* makkelijk leesbaar zijn. Voor groep 4, houd zinnen extreem kort en simpel. De moeilijkheid zit in het *spellen* van het woord, niet in het *begrijpen* van de zin.
+          2.  **Plaatsing Placeholder:** De '...' hoeft **NIET** aan het einde te staan. Plaats het waar het grammaticaal en logisch zinvol is.
+          3.  **Engagement:** Maak de zinnen leuk (dieren, avontuur, school), maar *nooit* ten koste van de eenvoud.
+          4.  **Duidelijke Context:** De zin moet nog steeds voldoende context (minstens 2 woorden) bevatten zodat het kind het woord kan raden.
+          5.  **Geen Vage Zinnen:** VERBIED zinnen als 'Ik heb een ...', 'Het ... is mooi.', 'Ik zie een ...', of definities.
+          6.  **Voorbeeld Interessant (maar simpel):** 'De dappere ridder vecht tegen de ... met zijn zwaard.' (Voorbeeld voor groep 5/6)
+          7.  **Voorbeeld Middenin (simpel):** 'In de winter draag ik een warme ... en handschoenen.'
+          8.  **Slecht Voorbeeld:** 'Een ... is geel.' (Te saai, geen context).
 
         - **Vorm 2: 'kies_juiste_spelling' (5 woorden):** Maak een opdracht waarbij de leerling moet kiezen tussen het correct gespelde woord en een veelvoorkomende, fonetische fout (bv. 'hond / hont', 'pauw / pau', 'geit / gijt'). Gebruik een ' / ' als scheidingsteken.
 
@@ -377,4 +383,5 @@ document.addEventListener('DOMContentLoaded', () => {
         window.print();
     }
 });
+
 
