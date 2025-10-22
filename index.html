@@ -9,6 +9,12 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap');
         body { font-family: 'Poppins', sans-serif; }
+        /* Stijl voor actieve tab */
+        .main-tab.active {
+            border-bottom-color: #EC4899; /* pink-600 */
+            color: #EC4899; /* pink-600 */
+            font-weight: 600;
+        }
     </style>
 </head>
 <body class="bg-pink-50">
@@ -19,44 +25,68 @@
             <p class="text-gray-600 mt-2">Maak je eigen spellingwerkblad, zonder gedoe!</p>
         </header>
 
-        <div class="bg-white p-6 rounded-2xl shadow-lg mb-8 max-w-4xl mx-auto no-print">
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                    <label class="block text-lg font-semibold mb-2 text-gray-700">1. Kies je groep</label>
-                    <div id="group-buttons" class="flex flex-wrap gap-2">
-                        <!-- Groep knoppen worden hier door JS ingevoegd -->
-                    </div>
-                </div>
-
-                <div id="category-selection" class="hidden">
-                    <h3 class="text-lg font-semibold mb-2 text-gray-700">2. Kies categorieën (max. 3)</h3>
-                    <div id="category-list" class="max-h-48 overflow-y-auto bg-gray-50 p-3 rounded-lg border">
-                        <!-- Categorie checkboxes worden hier door JS ingevoegd -->
-                    </div>
-                </div>
-            </div>
-            
-            <div id="generate-button-container" class="text-center mt-8 hidden">
-                <button id="generate-btn" class="bg-pink-600 text-white font-bold py-3 px-8 rounded-full text-lg hover:bg-pink-700 transition-all transform hover:scale-105 shadow-lg">
-                    <i class="fas fa-magic mr-2"></i> Maak Werkblad
-                </button>
+        <!-- NIEUW: Hoofd Tab Navigatie -->
+        <div class="max-w-4xl mx-auto mb-6 no-print">
+            <div class="border-b border-gray-300">
+                <nav class="-mb-px flex gap-6" aria-label="Tabs">
+                    <button id="tab-btn-new" class="main-tab active whitespace-nowrap py-3 px-1 border-b-2 font-medium text-lg text-gray-500 hover:text-gray-700" data-tab="new-worksheet-panel">
+                        Nieuw Werkblad
+                    </button>
+                    <button id="tab-btn-history" class="main-tab whitespace-nowrap py-3 px-1 border-b-2 font-medium text-lg text-gray-500 hover:text-gray-700" data-tab="history-panel">
+                        Opgeslagen Werkbladen
+                    </button>
+                </nav>
             </div>
         </div>
 
-        <!-- NIEUW: Geschiedenis Sectie -->
-        <div id="history-container" class="max-w-4xl mx-auto mt-10 mb-8 no-print hidden">
-            <div class="flex justify-between items-center mb-3">
-                <h3 class="text-lg font-semibold text-gray-700">Recent opgeslagen werkbladen</h3>
-                <button id="clear-history-btn" class="text-sm text-gray-500 hover:text-red-500 underline">
-                    <i class="fas fa-trash-alt mr-1"></i> Wis geschiedenis
-                </button>
+        <!-- NIEUW: Tab Panelen -->
+        <div class="max-w-4xl mx-auto">
+            <!-- Paneel 1: Nieuw Werkblad Generator -->
+            <div id="new-worksheet-panel" class="main-tab-panel">
+                <div class="bg-white p-6 rounded-2xl shadow-lg mb-8 no-print">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-lg font-semibold mb-2 text-gray-700">1. Kies je groep</label>
+                            <div id="group-buttons" class="flex flex-wrap gap-2">
+                                <!-- Groep knoppen worden hier door JS ingevoegd -->
+                            </div>
+                        </div>
+        
+                        <div id="category-selection" class="hidden">
+                            <h3 class="text-lg font-semibold mb-2 text-gray-700">2. Kies categorieën (max. 3)</h3>
+                            <div id="category-list" class="max-h-48 overflow-y-auto bg-gray-50 p-3 rounded-lg border">
+                                <!-- Categorie checkboxes worden hier door JS ingevoegd -->
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div id="generate-button-container" class="text-center mt-8 hidden">
+                        <button id="generate-btn" class="bg-pink-600 text-white font-bold py-3 px-8 rounded-full text-lg hover:bg-pink-700 transition-all transform hover:scale-105 shadow-lg">
+                            <i class="fas fa-magic mr-2"></i> Maak Werkblad
+                        </button>
+                    </div>
+                </div>
             </div>
-            <div id="history-list" class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                <!-- Geschiedenis-items worden hier door JS ingevoegd -->
+
+            <!-- Paneel 2: Geschiedenis -->
+            <div id="history-panel" class="main-tab-panel hidden">
+                <div id="history-container" class="max-w-4xl mx-auto no-print">
+                    <div class="flex justify-between items-center mb-3">
+                        <h3 class="text-lg font-semibold text-gray-700">Recent opgeslagen werkbladen</h3>
+                        <button id="clear-history-btn" class="text-sm text-gray-500 hover:text-red-500 underline">
+                            <i class="fas fa-trash-alt mr-1"></i> Wis geschiedenis
+                        </button>
+                    </div>
+                    <div id="history-list" class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <!-- Geschiedenis-items worden hier door JS ingevoegd -->
+                    </div>
+                </div>
             </div>
         </div>
 
-        <div id="worksheet-output">
+
+        <!-- Werkblad output blijft hier, buiten de tabs -->
+        <div id="worksheet-output" class="mt-8">
             <!-- Werkblad wordt hier door JS gegenereerd -->
         </div>
     </div>

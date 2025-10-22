@@ -83,6 +83,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const historyList = document.getElementById('history-list');
     const clearHistoryBtn = document.getElementById('clear-history-btn');
 
+    // NIEUW: Elementen voor hoofd-tabs
+    const newWorksheetPanel = document.getElementById('new-worksheet-panel');
+    const historyPanel = document.getElementById('history-panel');
+    const tabBtnNew = document.getElementById('tab-btn-new');
+    const tabBtnHistory = document.getElementById('tab-btn-history');
+
     // Functie voor notificaties
     function showNotification(message, isError = false) {
         const notification = document.createElement('div');
@@ -122,7 +128,7 @@ document.addEventListener('DOMContentLoaded', () => {
             displayCategories(currentGroup);
             categorySelection.classList.remove('hidden');
             generateBtnContainer.classList.remove('hidden');
-            renderHistoryList(); // Toon geschiedenis bij selecteren groep
+            // renderHistoryList(); // VERWIJDERD: Geschiedenis staat nu in eigen tab
             document.getElementById('worksheet-output').innerHTML = '';
         }
     });
@@ -316,7 +322,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 renderWorksheet(worksheetData, selectedCatIds, currentGroup);
                 // NIEUW: Sla op in geschiedenis
                 saveWorksheetToHistory(worksheetData, selectedCatIds, currentGroup);
-                renderHistoryList(); // Update de lijst
+                // renderHistoryList(); // VERWIJDERD: Wordt nu in tab geladen
             } else {
                 console.error("renderWorksheet functie niet gevonden. Is ui-worksheet.js correct geladen?");
                  showNotification("Fout bij het weergeven van het werkblad.", true);
@@ -408,11 +414,14 @@ document.addEventListener('DOMContentLoaded', () => {
     function renderHistoryList() {
         const history = getHistory();
         if (history.length === 0) {
-            historyContainer.classList.add('hidden');
+            // historyContainer.classList.add('hidden'); // Niet meer nodig, paneel is al verborgen
+            historyList.innerHTML = '<p class="text-gray-500 col-span-2">Je hebt nog geen werkbladen opgeslagen.</p>';
+            clearHistoryBtn.classList.add('hidden'); // Verberg 'wis' knop als er niks is
             return;
         }
         
-        historyContainer.classList.remove('hidden');
+        // historyContainer.classList.remove('hidden'); // Niet meer nodig
+        clearHistoryBtn.classList.remove('hidden');
         historyList.innerHTML = history.map(entry => {
             const title = `Groep ${entry.groupDisplay} - ${entry.categories.map(c => categories[c] || '...').join(', ')}`;
             const date = new Date(entry.timestamp).toLocaleString('nl-NL', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
@@ -480,10 +489,36 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // Laad de lijst bij het opstarten van de pagina
-    renderHistoryList();
+    // --- NIEUWE FUNCTIES VOOR HOOFD-TABS ---
+    function switchMainTab(targetPanelId) {
+        // Verberg alle panelen
+        newWorksheetPanel.classList.add('hidden');
+        historyPanel.classList.add('hidden');
 
-    // --- EINDE GESCHIEDENIS FUNCTIES ---
+        // Reset tab knoppen
+        tabBtnNew.classList.remove('active');
+        tabBtnHistory.classList.remove('active');
+
+        // Toon het juiste paneel en activeer de knop
+        if (targetPanelId === 'new-worksheet-panel') {
+            newWorksheetPanel.classList.remove('hidden');
+            tabBtnNew.classList.add('active');
+        } else if (targetPanelId === 'history-panel') {
+            historyPanel.classList.remove('hidden');
+            tabBtnHistory.classList.add('active');
+            renderHistoryList(); // Laad de geschiedenis-items als we naar dit tabblad gaan
+        }
+    }
+
+    // Event listeners voor hoofd-tabs
+    tabBtnNew.addEventListener('click', () => switchMainTab('new-worksheet-panel'));
+    tabBtnHistory.addEventListener('click', () => switchMainTab('history-panel'));
+
+    // --- EINDE HOOFD-TAB FUNCTIES ---
+
+    // Laad de lijst bij het opstarten van de pagina
+    // renderHistoryList(); // VERWIJDERD: Wordt nu geladen als je op de tab klikt. Standaard is 'Nieuw' open.
+    // (We laten de history list leeg tot de tab wordt aangeklikt)
 
 
     // Functies die globaal beschikbaar moeten zijn (voor knoppen in de HTML)
@@ -501,7 +536,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (wordList.length === 0) throw new Error("Geen woorden om een verhaal te maken.");
 
             const groupDisplay = currentGroup === '7' ? '7 of 8' : currentGroup;
-            const userPrompt = `Schrijf een heel kort, grappig en eenvoudig verhaaltje in het Nederlands voor een kind in groep ${groupDisplay}. Het verhaal moet de volgende woorden bevatten: ${wordList.join(', ')}. Maak de woorden uit de lijst dikgedrukt in de tekst door ze te omringen met **. Zorg ervoor dat het verhaal logisch en makkelijk te lezen is.`;
+            const userPrompt = `Schrijf een heel kort, grappig en eenvoudig verhaaltje in het Nederlands voor een kind in groep ${groupDisplay}. Het verhaal moet de volgende woorden bevatten: ${wordList.join(', ')}. Maak de woorden uit de lijst dikgedrukt in de tekst door ze te omringen met **. Zorg dat het verhaal logisch en makkelijk te lezen is.`;
             const systemPrompt = `Je bent een creatieve kinderboekenschrijver. Schrijf een kort, positief en grappig verhaal. Geef je antwoord als JSON object met een "story" key.`;
 
             const jsonResponseString = await callGeminiAPI(userPrompt, systemPrompt);
@@ -536,8 +571,4 @@ document.addEventListener('DOMContentLoaded', () => {
         window.print();
     }
 });
-
-
-
-
 
