@@ -516,11 +516,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 loadWorksheetFromHistory(target.dataset.historyId);
             } else if (deleteBtn) {
                 e.preventDefault();
-                // Vervang alert/confirm door custom UI indien gewenst
-                if (window.confirm('Weet je zeker dat je dit opgeslagen werkblad wilt verwijderen?')) {
-                    // --- FIX: Typfout in functienaam ---
-                    deleteWorksheetFromHistory(deleteBtn.dataset.deleteId);
-                }
+                // GEWIJZIGD: De 'window.confirm' (weet je het zeker) is verwijderd.
+                deleteWorksheetFromHistory(deleteBtn.dataset.deleteId);
             }
         });
     }
@@ -671,6 +668,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Start op de 'Nieuw' tab
     switchToTab('new');
 });
+
 
 
 
