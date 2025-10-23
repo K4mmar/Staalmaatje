@@ -24,17 +24,21 @@ const spellingRegels = [
   { "id": 18, "naam": "Colawoord", "regel": "Ik hoor de 'k', maar ik schrijf de 'c'." },
   { "id": 19, "naam": "Tropisch woord", "regel": "Ik hoor 'ies', maar ik schrijf 'isch'." },
   { "id": 20, "naam": "Taxiwoord", "regel": "Ik hoor 'ks', maar ik schrijf de 'x'." },
-  { "id": 21, "naam": "Chefwoord", "regel": "Ik hoor 'sj', maar ik schrijf 'ch'." },
-  { "id": 22, "naam": "Theewoord", "regel": "Ik hoor 't', maar ik schrijf 'th'." },
-  { "id": 23, "naam": "Caféwoord", "regel": "Met een streepje op de 'e'." },
-  { "id": 24, "naam": "Cadeauwoord", "regel": "Ik hoor 'oo', maar ik schrijf 'eau'." },
-  { "id": 25, "naam": "Routewoord", "regel": "Ik hoor 'oe', maar ik schrijf 'ou'." },
-  { "id": 26, "naam": "Garagewoord", "regel": "Ik hoor 'zj', maar ik schrijf 'g'." },
-  { "id": 27, "naam": "Lollywoord", "regel": "Ik hoor 'ie' aan het eind, maar ik schrijf 'y'." },
+  
+  // --- HIER ZIJN DE FRANSE LEENWOORD-REGELS AANGEPAST ---
+  { "id": 21, "naam": "Chefwoord", "regel": "Frans leenwoord (weetwoord) met 'ch' die klinkt als 'sj', zoals 'chef' of 'machine'." },
+  { "id": 22, "naam": "Theewoord", "regel": "Ik hoor 't', maar ik schrijf 'th'." }, // Deze blijft oké
+  { "id": 23, "naam": "Caféwoord", "regel": "Frans leenwoord (weetwoord) met een streepje op de 'e', zoals 'café' of 'idee'." },
+  { "id": 24, "naam": "Cadeauwoord", "regel": "Frans leenwoord (weetwoord) met 'eau', die klinkt als 'oo', zoals 'cadeau'." },
+  { "id": 25, "naam": "Routewoord", "regel": "Frans leenwoord (weetwoord) met 'ou' die klinkt als 'oe', zoals 'route' of 'journaal'." },
+  { "id": 26, "naam": "Garagewoord", "regel": "Frans leenwoord (weetwoord) met 'g' die klinkt als 'zj', zoals 'garage'." },
+  { "id": 27, "naam": "Lollywoord", "regel": "Ik hoor 'ie' aan het eind, maar ik schrijf 'y'." }, // Deze blijft oké
   { "id": 28, "naam": "Tremawoord", "regel": "Bij klinkerbotsing, een trema op de volgende klinker. Uitzondering: -ee en -ie." },
   { "id": 29, "naam": "Militairwoord", "regel": "Ik hoor 'èr', maar ik schrijf 'air'." },
   { "id": 30, "naam": "Koppelteken", "regel": "In samenstellingen met klinkerbotsing, aardrijkskundige namen, afkortingen." },
-  { "id": 31, "naam": "Trottoirwoord", "regel": "Ik hoor 'waar', maar ik schrijf 'oir'." },
+  { "id": 31, "naam": "Trottoirwoord", "regel": "Frans leenwoord (weetwoord) met 'oir', die klinkt als 'waar', zoals 'trottoir'." },
+  // --- EINDE AANPASSINGEN ---
+
   { "id": 32, "naam": "Tussen-e of -en", "regel": "Samenstelling met tussen -n of -en. Hoofdregel: schrijf altijd -en, tenzij het eerste deel uniek is of geen -en meervoud heeft." },
   { "id": 33, "naam": "Apostrofwoord", "regel": "Bij meervoud van woorden op -a, -i, -o, -u, -y. Bij bezit als de naam eindigt op een sisklank of een lange klinker." },
   { "id": 34, "naam": "Latijns voorvoegsel", "regel": "Voorvoegsels zoals ab-, ad-, con-, ob-, sub-." },
@@ -60,3 +64,4 @@ const groupCategories = {
     6: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 35, 36, 37],
     7: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37]
 };
+
