@@ -17,17 +17,6 @@ document.addEventListener('DOMContentLoaded', () => {
             body.print-answer-sheet #answer-sheet { display: block; }
             .no-print { display: none !important; }
             
-            /* --- NIEUWE REGELS HIERTOEGEVOEGD --- */
-            /* Zorg dat alle tekst zwart is en achtergronden transparant */
-            .printable-area, .printable-area * {
-                color: #000000 !important;
-                background-color: transparent !important;
-                border-color: #AAAAAA !important; /* Maak randen print-vriendelijk */
-                -webkit-print-color-adjust: exact; /* Forceer override */
-                print-color-adjust: exact;
-            }
-            /* --- EINDE NIEUWE REGELS --- */
-
             /* Compactere printstijlen */
             body.print-student-sheet #student-sheet,
             body.print-answer-sheet #answer-sheet {
@@ -53,6 +42,14 @@ document.addEventListener('DOMContentLoaded', () => {
             #student-sheet .gap-4, #answer-sheet .gap-4 { gap: 0.5rem; }
             #student-sheet .space-y-6, #answer-sheet .space-y-6 { gap: 0.75rem; }
             #student-sheet .mt-12, #answer-sheet .mt-12 { margin-top: 1rem; }
+            
+            /* Forceer zwarte tekst en geen achtergrond bij printen */
+            * {
+                -webkit-print-color-adjust: exact !important;
+                color-adjust: exact !important;
+                background-color: transparent !important;
+                color: #000 !important;
+            }
         }
     `;
     document.head.appendChild(style);
@@ -68,12 +65,10 @@ document.addEventListener('DOMContentLoaded', () => {
     // Tab-elementen
     const tabNew = document.getElementById('tab-new');
     const tabArchive = document.getElementById('tab-archive');
-    // GEWIJZIGD: Verwijst nu naar de container-div
-    const newWorksheetBlock = document.getElementById('new-worksheet-block');
+    
+    // Panelen (aangepast voor de nieuwe layout)
+    const newWorksheetBlock = document.getElementById('new-worksheet-block'); // Het gecombineerde paneel
     const archivePanel = document.getElementById('archive-panel');
-    // Deze blijven nodig om de selecties te kunnen resetten
-    const welcomePanel = document.getElementById('welcome-panel'); 
-    const newPanel = document.getElementById('new-panel'); 
     
     // Geschiedenis-elementen
     const historyList = document.getElementById('history-list');
@@ -194,9 +189,7 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // Zorg dat de UI klopt, ook bij laden uit geschiedenis
         currentGroup = group; 
-        // Zoek de knop op basis van data-group attribuut
-        const groupBtnValue = group === '7' ? '7' : group;
-        const activeBtn = document.querySelector(`.group-btn[data-group="${groupBtnValue}"]`);
+        const activeBtn = document.querySelector(`.group-btn[data-group="${group === '7' ? '7/8' : group}"]`);
         if (activeBtn) {
             handleGroupSelection(activeBtn, group);
         }
@@ -220,19 +213,14 @@ document.addEventListener('DOMContentLoaded', () => {
             // --- AANGEPAST: Gebruikt de 'group' var ---
             const userQuery = `Genereer een spellingwerkblad voor groep ${groupDisplay} op basis van deze regels: ${JSON.stringify(geselecteerdeRegels, null, 2)}`;
 
+            // --- AANGEPAST: Zeer strenge instructies voor Franse leenwoorden ---
             const systemPrompt = `Je bent een ervaren en creatieve leerkracht voor het basisonderwijs in Nederland, expert in de 'Staal' spellingmethode. Je taak is het genereren van een compleet, printklaar en didactisch verantwoord spellingwerkblad.
     
     Je volgt deze stappen:
     1.  **Genereer 15 Woorden:** Maak eerst een lijst van 15 unieke, voor de groep geschikte woorden die passen bij de opgegeven spellingcategorieën. **BELANGRIJK: Alle gegenereerde woorden moeten 100% correct gespeld zijn en voorkomen in het Nederlandse woordenboek.**
-        
-        **Let specifiek op de correcte Nederlandse spelling van leenwoorden (bijv. 'abonnee', niet 'abonné'; 'portemonnee', niet 'portemonnaie').**
-
-        <!-- HIER IS DE NIEUWE, STRENGE REGEL TOEGEVOEGD -->
-        **VOOR Franse leenwoorden (zoals Chef-, Café-, Cadeau-, Garage-woorden): De woorden MOETEN volledig ingeburgerd en gebruikelijk zijn in de Nederlandse taal (zoals 'chef', 'machine', 'café', 'logeren', 'cadeau', 'garage'). Genereer GEEN pure Franse woorden (zoals 'carré', 'comité', 'logé', 'parfumée', 'soufflé', 'décor').**
-
     2.  **Maak 3 Soorten Oefeningen:** Gebruik deze 15 woorden om 3 verschillende soorten oefeningen te maken. Elke oefeningsoort gebruikt 5 unieke woorden uit de lijst. Zorg dat elk woord precies één keer wordt gebruikt.
 
-        - **Vorm 1: 'invulzinnen' (5 woorden):** Maak een **interessante, contextrijke zin** voor een basisschoolkind en vervang het doelwoord door '...' (drie puntjes).
+        - **Vorm 1: 'invulzinnen' (5 woorden):** Maak een **interessante, contextrijke zin** voor een basisonchoolkind en vervang het doelwoord door '...' (drie puntjes).
           
           **BELANGRIJKE HOOFDREGEL: Pas de zinscomplexiteit AAN OP DE GROEP!**
           - **Groep 4:** Zeer korte, simpele zinnen (max. 8-10 woorden, geen moeilijke bijzinnen). Gebruik basiswoorden.
@@ -246,14 +234,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
         - **Vorm 2: 'kies_juiste_spelling' (5 woorden):** Maak een opdracht waarbij de leerling moet kiezen tussen het correct gespelde woord en een veelvoorkomende, fonetische fout (bv. 'hond / hont', 'pauw / pau', 'geit / gijt'). Gebruik een ' / ' als scheidingsteken.
 
-        - **Vorm 3: 'regelvragen' (5 woorden):** Maak een concrete vraag die de spellingstrategie test. **BELANGRIJK: De vraag MOET de spellingregel van de categorie testen.** * Voorbeeld (Langermaakwoord): "Maak het langer: [verkorte vorm] ⟶"
+        - **Vorm 3: 'regelvragen' (5 woorden):** Maak een concrete vraag die de spellingstrategie test. **BELANGRIJK: De vraag MOET de spellingregel van de categorie testen.**
+          * Voorbeeld (Langermaakwoord): "Maak het langer: [verkorte vorm] ⟶"
           * Voorbeeld (Verkleinwoord): "Maak het verkleinwoord: [grondwoord] ⟶"
           * Voorbeeld (Samenstelling): "Voeg samen: [deel 1] + [deel 2] ⟶"
           * Voorbeeld (Kilowoord): "Wat hoor je, wat schrijf je? k-?-lo"
           * Wees creatief en zorg dat de vraag *altijd* relevant is voor de categorie.
 
     3.  **Lever het resultaat** als een perfect gestructureerd JSON-object. Gebruik exact dit formaat:
-        \`{ "woordenlijst": [ { "woord": "voorbeeld", "categorie": 10 }, ... ], "oefeningen": { "invulzinnen": [ { "opdracht": "...", "woord": "...", "categorie": ... } ], "kies_juiste_spelling": [ { "opdracht": "Kies: ... / ...", "woord": "...", "categorie": ... } ], "regelvragen": [ { "opdracht": "...", "woord": "...", "categorie": ... } ] } }\``;
+        \`{ "woordenlijst": [ { "woord": "voorbeeld", "categorie": 10 }, ... ], "oefeningen": { "invulzinnen": [ { "opdracht": "...", "woord": "...", "categorie": ... } ], "kies_juiste_spelling": [ { "opdracht": "Kies: ... / ...", "woord": "...", "categorie": ... } ], "regelvragen": [ { "opdracht": "...", "woord": "...", "categorie": ... } ] } }\`
+        
+    4.  **!!! SPECIALE INSTRUCTIES VOOR LEENWOORDEN (ZEER BELANGRIJK) !!!**
+        - **REGEL 1:** Genereer **UITSLUITEND** woorden die gangbaar zijn in het Nederlands basisonderwijs voor de opgegeven groep.
+        - **REGEL 2 (VERBODEN WOORDEN):** VERMIJD ten koste van alles het genereren van moeilijke, specialistische of *te* Franse woorden. Genereer **NOOIT** woorden zoals: 'procédé', 'variété', 'carré', 'comité', 'soufflé', 'parfumée', 'logé', 'jubilé', 'dépôt', 'régime', 'intrigé', 'fiancé', 'exposé', 'blazé', 'défilé', 'cliché', 'resumé', 'coupé'.
+        - **REGEL 3 (CORRECTE SPELLING):** Zorg dat de Nederlandse spelling wordt gebruikt. (Bijvoorbeeld: 'abonnee', niet 'abonné'. 'portemonnee', niet 'portemonnaie').
+        - **REGEL 4 (SPECIALE NOODREM VOOR CATEGORIE 23 'CAFÉWOORD'):** Als categorie 23 ('Caféwoord') is geselecteerd, behandel dit dan als een **algemene 'Franse Leenwoorden' categorie**. Je bent **NIET VERPLICHT** om alleen woorden met 'é' te genereren (zoals de regel suggereert). Genereer in plaats daarvan een **MIX** van bekende Nederlandse leenwoorden die bij 'Staal' passen, zoals 'café', 'idee', 'chef', 'machine', 'garage', 'trottoir', 'journaal', 'cadeau', 'route', 'politie'. Dit is om een lijst met te moeilijke 'é'-woorden (zoals 'procédé') te voorkomen.`;
 
             let jsonResponseString = await callGeminiAPI(userQuery, systemPrompt);
             let worksheetData = JSON.parse(jsonResponseString);
@@ -263,14 +258,12 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             generateBtn.innerHTML = `<i class="fas fa-spell-check mr-2"></i> Woorden worden gecontroleerd...`;
-            
-            // --- AANROEP NAAR DE TOEGEVOEGDE FUNCTIE ---
             let invalidWords = await validateWords(worksheetData.woordenlijst);
 
             if (invalidWords.length > 0) {
                 generateBtn.innerHTML = `<i class="fas fa-wand-magic-sparkles mr-2"></i> Magie wordt toegevoegd...`; // Positief bericht
 
-                const invalidWordsInfo = invalidWords.map(item => ({ original: item.woord, categorie: (typeof categories !== 'undefined' && categories[item.categorie]) ? categories[item.categorie] : 'Onbekend' }));
+                const invalidWordsInfo = invalidWords.map(item => ({ original: item.woord, categorie: categories[item.categorie] }));
                 const correctionQuery = `Je hebt eerder de volgende woorden gegenereerd die spelfouten bevatten: ${JSON.stringify(invalidWordsInfo)}. Geef de correcte spelling voor elk van deze woorden.`;
                 const correctionSystemPrompt = `Je bent een spellingcorrector. Je krijgt een lijst met foute woorden en hun context (categorie). Geef een JSON-object terug dat de originele foute woorden koppelt aan hun correcte spelling. Gebruik dit formaat: \`{ "correcties": [ { "origineel": "foutwoord1", "correct": "goedwoord1" }, { "origineel": "foutwoord2", "correct": "goedwoord2" } ] }\``;
 
@@ -348,36 +341,36 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // --- TOEGEVOEGDE FUNCTIE ---
-    // Functie om woorden te valideren via een externe API
+    // Functie om de spelling van woorden te valideren via een externe API
     async function validateWords(wordList) {
         const invalidWords = [];
-        const apiUrl = "https://nl.wiktionary.org/api/rest_v1/page/definition/";
+        const apiUrl = 'https://api.dictionaryapi.dev/api/v2/entries/nl/';
 
-        for (const item of wordList) {
-            const word = item.woord.toLowerCase();
-            try {
-                // Wacht 50ms tussen verzoeken om de API-limiet niet te raken
-                await new Promise(resolve => setTimeout(resolve, 50)); 
-                
-                const response = await fetch(apiUrl + encodeURIComponent(word), {
-                    headers: { 'Accept': 'application/json' }
+        // We controleren alle woorden tegelijkertijd
+        const checks = wordList.map(item => {
+            return fetch(apiUrl + encodeURIComponent(item.woord))
+                .then(response => {
+                    if (!response.ok) {
+                        // Als de API 404 (Not Found) geeft, bestaat het woord niet.
+                        if (response.status === 404) {
+                            console.warn(`Woord niet gevonden in woordenboek: ${item.woord}`);
+                            invalidWords.push(item);
+                        } else {
+                            // Andere serverfouten negeren we voor nu (API is soms onstabiel)
+                            console.warn(`API-fout bij controleren van '${item.woord}': ${response.status}`);
+                        }
+                    }
+                    // Als response.ok true is, bestaat het woord.
+                })
+                .catch(error => {
+                    // Netwerkfouten etc.
+                    console.error(`Fout bij valideren van '${item.woord}':`, error);
                 });
+        });
 
-                if (response.status === 404) {
-                    // 404 betekent dat het woord niet is gevonden
-                    invalidWords.push(item);
-                } else if (!response.ok) {
-                    // Andere fouten (bv. 500, 503) negeren we en we gaan ervan uit dat het woord oké is
-                    console.warn(`Woordenboek API gaf status ${response.status} voor woord: ${word}`);
-                }
-                // Als response.ok (status 200) is, is het woord geldig.
-                
-            } catch (error) {
-                console.error(`Fout bij valideren van woord ${word}:`, error);
-                // Bij een netwerkfout gaan we er voor nu vanuit dat het woord oké is
-            }
-        }
+        // Wacht tot alle API-aanroepen (checks) klaar zijn
+        await Promise.all(checks);
+        
         return invalidWords;
     }
 
@@ -517,9 +510,6 @@ document.addEventListener('DOMContentLoaded', () => {
             console.error("renderWorksheet functie niet gevonden.");
             showNotification("Fout bij het weergeven van het werkblad.", true);
         }
-        
-        // We hoeven niet terug te schakelen naar de 'Nieuw' tab,
-        // het werkblad wordt gewoon onderaan de 'Archief' tab geladen.
     }
 
     // Event listener for history list (laden en verwijderen)
@@ -533,7 +523,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 loadWorksheetFromHistory(target.dataset.historyId);
             } else if (deleteBtn) {
                 e.preventDefault();
-                // GEWIJZIGD: De 'window.confirm' (weet je het zeker) is verwijderd.
+                // --- BEVESTIGING VERWIJDERD ---
                 deleteWorksheetFromHistory(deleteBtn.dataset.deleteId);
             }
         });
@@ -542,7 +532,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Knop 'Alles wissen'
     if (clearHistoryBtn) {
         clearHistoryBtn.addEventListener('click', () => {
-            // Vervang alert/confirm door custom UI indien gewenst
+            // Bevestiging hier nog wel aanwezig
             if (window.confirm('Weet je zeker dat je de *volledige* geschiedenis wilt wissen? Dit kan niet ongedaan worden gemaakt.')) {
                 worksheetHistory = [];
                 saveHistory();
@@ -577,7 +567,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const formattedStory = storyText.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>');
             const storyOutput = document.getElementById('story-output');
             storyOutput.innerHTML = `<p>${formattedStory}</p>`;
-        // --- FIX: Ontbrekend haakje { toegevoegd ---
         } catch (error) {
             console.error('Error generating story:', error);
             const storyOutput = document.getElementById('story-output');
@@ -619,12 +608,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             // Show/hide panels
-            // GEWIJZIGD: Toon/verberg de nieuwe container
-            if (newWorksheetBlock) {
-                newWorksheetBlock.classList.remove('hidden');
-                newWorksheetBlock.classList.add('grid');
-// FOUT: 'open' hier verwijderd
-            }
+            if (newWorksheetBlock) newWorksheetBlock.classList.remove('hidden');
             if (archivePanel) archivePanel.classList.add('hidden');
             if (worksheetOutput) worksheetOutput.innerHTML = ''; // Clear worksheet
             
@@ -646,11 +630,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             // Show/hide panels
-            // GEWIJZIGD: Toon/verberg de nieuwe container
-            if (newWorksheetBlock) {
-                newWorksheetBlock.classList.add('hidden');
-                newWorksheetBlock.classList.remove('grid');
-            }
+            if (newWorksheetBlock) newWorksheetBlock.classList.add('hidden');
             if (archivePanel) archivePanel.classList.remove('hidden');
             if (worksheetOutput) worksheetOutput.innerHTML = ''; // Clear worksheet
             
@@ -666,14 +646,15 @@ document.addEventListener('DOMContentLoaded', () => {
             switchToTab('new');
         });
     }
- 
-    // --- FIX: De event listener voor de Archief-knop was verdwenen ---
+
     if (tabArchive) {
         tabArchive.addEventListener('click', (e) => {
             e.preventDefault();
             switchToTab('archive');
         });
     }
+
+Reactiescherm (Canvas)
 
     // --- INIT ---
     loadHistory();
@@ -685,10 +666,4 @@ document.addEventListener('DOMContentLoaded', () => {
     // Start op de 'Nieuw' tab
     switchToTab('new');
 });
-
-
-
-
-
-
 
