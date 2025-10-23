@@ -654,8 +654,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-Reactiescherm (Canvas)
-
     // --- INIT ---
     loadHistory();
     // Selecteer Groep 4 standaard
@@ -666,4 +664,5 @@ Reactiescherm (Canvas)
     // Start op de 'Nieuw' tab
     switchToTab('new');
 });
+
 
