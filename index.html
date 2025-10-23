@@ -40,7 +40,8 @@
             <div id="new-worksheet-block" class="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-16 items-center">
                 
                 <!-- Linker kolom: Menu -->
-                <div id="new-panel" class="md:col-span-1 md:order-1 space-y-6">
+                <!-- GEWIJZIGD: 'order-2' toegevoegd voor mobiele weergave -->
+                <div id="new-panel" class="md:col-span-1 order-2 md:order-1 space-y-6">
                     <!-- Selectie paneel -->
                     <div>
                         <div class="space-y-6">
@@ -70,7 +71,8 @@
                 </div>
 
                 <!-- Rechter kolom: Logo / Welkom -->
-                <div id="welcome-panel" class="md:col-span-1 md:order-2">
+                <!-- GEWIJZIGD: 'order-1' toegevoegd voor mobiele weergave -->
+                <div id="welcome-panel" class="md:col-span-1 order-1 md:order-2">
                     <div class="flex flex-col items-center text-center">
                         <!-- GEWIJZIGD: w-48 h-48 vervangen door responsieve classes -->
                         <img src="images/logo.png" alt="Staalmaatje Logo" class="w-1/2 md:w-3/4 h-auto mx-auto object-contain">
@@ -121,4 +123,5 @@
     <script src="main.js"></script>
 </body>
 </html>
+
 
