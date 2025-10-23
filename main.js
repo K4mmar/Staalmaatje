@@ -17,6 +17,17 @@ document.addEventListener('DOMContentLoaded', () => {
             body.print-answer-sheet #answer-sheet { display: block; }
             .no-print { display: none !important; }
             
+            /* --- NIEUWE REGELS HIERTOEGEVOEGD --- */
+            /* Zorg dat alle tekst zwart is en achtergronden transparant */
+            .printable-area, .printable-area * {
+                color: #000000 !important;
+                background-color: transparent !important;
+                border-color: #AAAAAA !important; /* Maak randen print-vriendelijk */
+                -webkit-print-color-adjust: exact; /* Forceer override */
+                print-color-adjust: exact;
+            }
+            /* --- EINDE NIEUWE REGELS --- */
+
             /* Compactere printstijlen */
             body.print-student-sheet #student-sheet,
             body.print-answer-sheet #answer-sheet {
@@ -668,6 +679,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Start op de 'Nieuw' tab
     switchToTab('new');
 });
+
 
 
 
