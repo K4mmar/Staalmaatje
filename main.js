@@ -57,9 +57,12 @@ document.addEventListener('DOMContentLoaded', () => {
     // Tab-elementen
     const tabNew = document.getElementById('tab-new');
     const tabArchive = document.getElementById('tab-archive');
-    const newPanel = document.getElementById('new-panel');
+    // GEWIJZIGD: Verwijst nu naar de container-div
+    const newWorksheetBlock = document.getElementById('new-worksheet-block');
     const archivePanel = document.getElementById('archive-panel');
-    const welcomePanel = document.getElementById('welcome-panel');
+    // Deze blijven nodig om de selecties te kunnen resetten
+    const welcomePanel = document.getElementById('welcome-panel'); 
+    const newPanel = document.getElementById('new-panel'); 
     
     // Geschiedenis-elementen
     const historyList = document.getElementById('history-list');
@@ -180,7 +183,9 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // Zorg dat de UI klopt, ook bij laden uit geschiedenis
         currentGroup = group; 
-        const activeBtn = document.querySelector(`.group-btn[data-group="${group === '7' ? '7/8' : group}"]`);
+        // Zoek de knop op basis van data-group attribuut
+        const groupBtnValue = group === '7' ? '7' : group;
+        const activeBtn = document.querySelector(`.group-btn[data-group="${groupBtnValue}"]`);
         if (activeBtn) {
             handleGroupSelection(activeBtn, group);
         }
@@ -241,15 +246,14 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             generateBtn.innerHTML = `<i class="fas fa-spell-check mr-2"></i> Woorden worden gecontroleerd...`;
-            // ==========================================================
-            // DEZE REGEL VEROORZAAKTE DE FOUT. NU IS DE FUNCTIE ERONDER GEDEFINIEERD.
-            // ==========================================================
-            let invalidWords = await validateWords(worksheetData.woordenlijst); 
+            
+            // --- AANROEP NAAR DE TOEGEVOEGDE FUNCTIE ---
+            let invalidWords = await validateWords(worksheetData.woordenlijst);
 
             if (invalidWords.length > 0) {
                 generateBtn.innerHTML = `<i class="fas fa-wand-magic-sparkles mr-2"></i> Magie wordt toegevoegd...`; // Positief bericht
 
-                const invalidWordsInfo = invalidWords.map(item => ({ original: item.woord, categorie: categories[item.categorie] }));
+                const invalidWordsInfo = invalidWords.map(item => ({ original: item.woord, categorie: (typeof categories !== 'undefined' && categories[item.categorie]) ? categories[item.categorie] : 'Onbekend' }));
                 const correctionQuery = `Je hebt eerder de volgende woorden gegenereerd die spelfouten bevatten: ${JSON.stringify(invalidWordsInfo)}. Geef de correcte spelling voor elk van deze woorden.`;
                 const correctionSystemPrompt = `Je bent een spellingcorrector. Je krijgt een lijst met foute woorden en hun context (categorie). Geef een JSON-object terug dat de originele foute woorden koppelt aan hun correcte spelling. Gebruik dit formaat: \`{ "correcties": [ { "origineel": "foutwoord1", "correct": "goedwoord1" }, { "origineel": "foutwoord2", "correct": "goedwoord2" } ] }\``;
 
@@ -327,48 +331,39 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // ===================================================================================
-    // WOORDEN VALIDATIE FUNCTIE (NIEUW TOEGEVOEGD)
-    // ===================================================================================
-
-    /**
-     * Valideert een lijst van woorden via een externe woordenboek-API.
-     * @param {Array<Object>} wordList - Een array van {woord: "...", categorie: ...} objecten.
-     * @returns {Promise<Array<Object>>} - Een promise die reslveert naar een array van de *niet-gevonden* woord objecten.
-     */
+    // --- TOEGEVOEGDE FUNCTIE ---
+    // Functie om woorden te valideren via een externe API
     async function validateWords(wordList) {
         const invalidWords = [];
-        
-        // Maak een array van promises, zodat we woorden parallel kunnen controleren
-        const validationPromises = wordList.map(async (item) => {
+        const apiUrl = "https://nl.wiktionary.org/api/rest_v1/page/definition/";
+
+        for (const item of wordList) {
+            const word = item.woord.toLowerCase();
             try {
-                // We gebruiken encodeURIComponent voor het geval er speciale tekens in het woord zitten
-                const response = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/nl/${encodeURIComponent(item.woord)}`);
+                // Wacht 50ms tussen verzoeken om de API-limiet niet te raken
+                await new Promise(resolve => setTimeout(resolve, 50)); 
                 
-                // De API geeft een { "title": "No Definitions Found" } object terug als het woord niet bestaat.
-                if (!response.ok) {
-                    const errorData = await response.json();
-                    if (errorData && errorData.title === "No Definitions Found") {
-                        invalidWords.push(item); // Woord niet gevonden, dus "ongeldig"
-                    } else {
-                        // Andere fout (bv. 500 server error bij de API), log het maar markeer niet als ongeldig
-                        console.warn(`API-fout bij valideren '${item.woord}': ${response.status}`);
-                    }
+                const response = await fetch(apiUrl + encodeURIComponent(word), {
+                    headers: { 'Accept': 'application/json' }
+                });
+
+                if (response.status === 404) {
+                    // 404 betekent dat het woord niet is gevonden
+                    invalidWords.push(item);
+                } else if (!response.ok) {
+                    // Andere fouten (bv. 500, 503) negeren we en we gaan ervan uit dat het woord oké is
+                    console.warn(`Woordenboek API gaf status ${response.status} voor woord: ${word}`);
                 }
-                // Als response.ok true is (status 200), is het woord gevonden en dus geldig.
+                // Als response.ok (status 200) is, is het woord geldig.
                 
             } catch (error) {
-                // Als de API-call zelf mislukt (bv. netwerkfout), loggen we dit
-                // We gaan er dan vanuit dat het woord geldig is, om de app niet te breken.
-                console.warn(`Kon validatie-check niet uitvoeren voor '${item.woord}':`, error);
+                console.error(`Fout bij valideren van woord ${word}:`, error);
+                // Bij een netwerkfout gaan we er voor nu vanuit dat het woord oké is
             }
-        });
-
-        // Wacht tot alle validatie-checks klaar zijn
-        await Promise.all(validationPromises);
-        
+        }
         return invalidWords;
     }
+
 
     // Functie voor API-aanroep
     async function callGeminiAPI(userQuery, systemPrompt) {
@@ -506,9 +501,8 @@ document.addEventListener('DOMContentLoaded', () => {
             showNotification("Fout bij het weergeven van het werkblad.", true);
         }
         
-        // --- DEZE REGEL VEROORZAAKTE DE FOUT ---
-        // We hoeven niet terug naar 'Nieuw'
-        // switchToTab('new'); 
+        // We hoeven niet terug te schakelen naar de 'Nieuw' tab,
+        // het werkblad wordt gewoon onderaan de 'Archief' tab geladen.
     }
 
     // Event listener for history list (laden en verwijderen)
@@ -611,8 +605,12 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             // Show/hide panels
-            if (newPanel) newPanel.classList.remove('hidden');
-            if (welcomePanel) welcomePanel.classList.remove('hidden');
+            // GEWIJZIGD: Toon/verberg de nieuwe container
+            if (newWorksheetBlock) {
+                newWorksheetBlock.classList.remove('hidden');
+                newWorksheetBlock.classList.add('grid');
+// FOUT: 'open' hier verwijderd
+            }
             if (archivePanel) archivePanel.classList.add('hidden');
             if (worksheetOutput) worksheetOutput.innerHTML = ''; // Clear worksheet
             
@@ -634,8 +632,11 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             // Show/hide panels
-            if (newPanel) newPanel.classList.add('hidden');
-            if (welcomePanel) welcomePanel.classList.add('hidden');
+            // GEWIJZIGD: Toon/verberg de nieuwe container
+            if (newWorksheetBlock) {
+                newWorksheetBlock.classList.add('hidden');
+                newWorksheetBlock.classList.remove('grid');
+            }
             if (archivePanel) archivePanel.classList.remove('hidden');
             if (worksheetOutput) worksheetOutput.innerHTML = ''; // Clear worksheet
             
@@ -651,15 +652,8 @@ document.addEventListener('DOMContentLoaded', () => {
             switchToTab('new');
         });
     }
-
-    if (tabArchive) {
-        tabArchive.addEventListener('click', (e) => {
-            e.preventDefault();
-            switchToTab('archive');
-        });
-    }
-
-
+ 
+// FOUT: Mijn commentaar hier verwijderd. Dit is geen code.
 
     // --- INIT ---
     loadHistory();
@@ -671,3 +665,5 @@ document.addEventListener('DOMContentLoaded', () => {
     // Start op de 'Nieuw' tab
     switchToTab('new');
 });
+
+
