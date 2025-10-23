@@ -25,7 +25,7 @@
                     </h1>
                 </div>
                 <div class="flex space-x-2">
-                    <!-- CORRECTIE: ${COLORS.blue} vervangen door de hex-code #2073af -->
+                    <!-- De style-attributen hier worden nu beheerd door main.js -->
                     <button id="tab-new" class="px-4 py-2 rounded-md font-semibold text-sm" style="color: #2073af; box-shadow: inset 0 -2px 0 0 #2073af;">Nieuw</button>
                     <button id="tab-archive" class="px-4 py-2 rounded-md font-semibold text-sm text-slate-600 hover:text-slate-900">Archief</button>
                 </div>
@@ -33,56 +33,59 @@
         </header>
 
         <!-- .no-print HIER TOEGEVOEGD -->
-        <!-- GEWIJZIGD: md:grid-cols-2 verwijderd, main is nu 1 kolom -->
-        <main id="main-content" class="mt-8 grid grid-cols-1 gap-8 no-print">
+        <main id="main-content" class="mt-8 no-print">
             
-            <!-- NIEUWE CONTAINER voor het "Nieuw" paneel -->
-            <!-- Deze div is nu het witte vlak en de 2-koloms grid -->
-            <div id="new-worksheet-block" class="bg-white p-6 md:p-8 rounded-2xl shadow-lg grid grid-cols-1 md:grid-cols-2 gap-8">
-
-                <!-- Rechter kolom: Logo / Welkom (binnen de nieuwe container) -->
-                <!-- GEWIJZIGD: Oude wrapper div (met bg-white, etc.) is verwijderd -->
-                <div id="welcome-panel" class="md:col-span-1 md:order-2 flex flex-col items-center text-center">
-                    <img src="images/logo.png" alt="Staalmaatje Logo" class="w-48 h-48 object-contain">
-                    <h2 class="text-2xl font-bold text-slate-800 mt-4">Welkom bij Staalmaatje</h2>
-                    <p class="text-slate-600 mt-1">Stel hier je eigen spellingwerkblad samen.</p>
-                </div>
-
-                <!-- Linker kolom: Menu (binnen de nieuwe container) -->
-                <!-- GEWIJZIGD: Oude wrapper div (met bg-white, etc.) is verwijderd -->
-                <div id="new-panel" class="md:col-span-1 space-y-6 md:order-1">
+            <!-- Dit is de container voor het 'Nieuw' paneel -->
+            <!-- GEWIJZIGD: bg-white, padding, shadow, en rounded-2xl zijn verwijderd -->
+            <div id="new-worksheet-block" class="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-16 items-center">
+                
+                <!-- Linker kolom: Menu -->
+                <div id="new-panel" class="md:col-span-1 md:order-1 space-y-6">
                     <!-- Selectie paneel -->
-                    <div class="space-y-6">
-                        <div>
-                            <label class="block text-lg font-semibold mb-3 text-slate-700">1. Kies je groep</label>
-                            <div id="group-buttons" class="flex flex-wrap gap-2">
-                                <!-- Groep knoppen worden hier door JS ingevoegd -->
+                    <div>
+                        <div class="space-y-6">
+                            <div>
+                                <label class="block text-lg font-semibold mb-3 text-slate-700">1. Kies je groep</label>
+                                <div id="group-buttons" class="flex flex-wrap gap-2">
+                                    <!-- Groep knoppen worden hier door JS ingevoegd -->
+                                </div>
                             </div>
-                        </div>
 
-                        <!-- Categorieën zijn nu standaard zichtbaar -->
-                        <div id="category-selection">
-                            <h3 class="text-lg font-semibold mb-3 text-slate-700">2. Kies categorieën (max. 3)</h3>
-                            <div id="category-list" class="max-h-60 overflow-y-auto bg-slate-50 p-4 rounded-lg border border-slate-200 space-y-2">
-                                <!-- Categorie checkboxes worden hier door JS ingevoegd -->
+                            <!-- Categorieën zijn nu standaard zichtbaar -->
+                            <div id="category-selection">
+                                <h3 class="text-lg font-semibold mb-3 text-slate-700">2. Kies categorieën (max. 3)</h3>
+                                <div id="category-list" class="max-h-60 overflow-y-auto bg-white p-4 rounded-lg border border-slate-200 space-y-2">
+                                    <!-- Categorie checkboxes worden hier door JS ingevoegd -->
+                                </div>
                             </div>
                         </div>
-                    </div>
-                    
-                    <!-- Knop is nu standaard zichtbaar -->
-                    <div id="generate-button-container" class="text-left mt-8">
-                        <button id="generate-btn" class="font-bold py-3 px-8 rounded-full text-lg text-white transition-all transform hover:scale-105 shadow-lg flex items-center justify-center gap-2" style="background-color: #f19127;">
-                            <i class="fas fa-magic"></i> Maak Werkblad
-                        </button>
+                        
+                        <!-- Knop is nu standaard zichtbaar -->
+                        <div id="generate-button-container" class="text-left mt-8">
+                            <button id="generate-btn" class="font-bold py-3 px-8 rounded-full text-lg text-white transition-all transform hover:scale-105 shadow-lg flex items-center justify-center gap-2" style="background-color: #f19127;">
+                                <i class="fas fa-magic"></i> Maak Werkblad
+                            </button>
+                        </div>
                     </div>
                 </div>
 
-            </div> <!-- Einde van de nieuwe container -->
+                <!-- Rechter kolom: Logo / Welkom -->
+                <div id="welcome-panel" class="md:col-span-1 md:order-2">
+                    <div class="flex flex-col items-center text-center">
+                        <!-- GEWIJZIGD: w-48 h-48 vervangen door responsieve classes -->
+                        <img src="images/logo.png" alt="Staalmaatje Logo" class="w-1/2 md:w-3/4 h-auto mx-auto object-contain">
+                        <h2 class="text-2xl font-bold text-slate-800 mt-4">Welkom bij Staalmaatje</h2>
+                        <p class="text-slate-600 mt-1">Stel hier je eigen spellingwerkblad samen.</p>
+                    </div>
+                </div>
+
+            </div> <!-- Einde new-worksheet-block -->
+
 
             <!-- Geschiedenis Paneel (verborgen) -->
-            <!-- GEWIJZIGD: md:col-span-2 verwijderd, past nu in 1-koloms grid -->
             <div id="archive-panel" class="hidden">
-                <div class="bg-white p-6 rounded-2xl shadow-lg">
+                <!-- GEWIJZIGD: bg-white, p-6, rounded-2xl, shadow-lg zijn verwijderd -->
+                <div>
                     <div class="flex justify-between items-center mb-4">
                         <h2 class="text-2xl font-bold text-slate-800">Opgeslagen Werkbladen</h2>
                         <button id="clear-history-btn" class="text-sm text-red-600 hover:text-red-800 font-semibold">
@@ -114,6 +117,7 @@
         };
     </script>
     <script src="data.js"></script>
+    <!-- FOUT HIER GECORRIGEERD: </Dscript> is nu </script> -->
     <script src="ui-worksheet.js"></script>
     <script src="main.js"></script>
 </body>
