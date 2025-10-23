@@ -653,7 +653,13 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
  
-// FOUT: Mijn commentaar hier verwijderd. Dit is geen code.
+    // --- FIX: De event listener voor de Archief-knop was verdwenen ---
+    if (tabArchive) {
+        tabArchive.addEventListener('click', (e) => {
+            e.preventDefault();
+            switchToTab('archive');
+        });
+    }
 
     // --- INIT ---
     loadHistory();
@@ -665,5 +671,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // Start op de 'Nieuw' tab
     switchToTab('new');
 });
+
 
 
