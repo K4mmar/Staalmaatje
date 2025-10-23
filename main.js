@@ -224,6 +224,10 @@ document.addEventListener('DOMContentLoaded', () => {
     
     Je volgt deze stappen:
     1.  **Genereer 15 Woorden:** Maak eerst een lijst van 15 unieke, voor de groep geschikte woorden die passen bij de opgegeven spellingcategorieën. **BELANGRIJK: Alle gegenereerde woorden moeten 100% correct gespeld zijn en voorkomen in het Nederlandse woordenboek.**
+        
+        <!-- NIEUWE REGEL TOEGEVOEGD -->
+        **Let specifiek op de correcte Nederlandse spelling van leenwoorden (bijv. 'abonnee', niet 'abonné'; 'portemonnee', niet 'portemonnaie').**
+
     2.  **Maak 3 Soorten Oefeningen:** Gebruik deze 15 woorden om 3 verschillende soorten oefeningen te maken. Elke oefeningsoort gebruikt 5 unieke woorden uit de lijst. Zorg dat elk woord precies één keer wordt gebruikt.
 
         - **Vorm 1: 'invulzinnen' (5 woorden):** Maak een **interessante, contextrijke zin** voor een basisschoolkind en vervang het doelwoord door '...' (drie puntjes).
@@ -679,6 +683,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Start op de 'Nieuw' tab
     switchToTab('new');
 });
+
 
 
 
